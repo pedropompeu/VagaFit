@@ -1,0 +1,35 @@
+# Segredos e dados reais
+.env
+*.pem
+data/
+curriculos/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+
+# Memória de projeto local (holding). Contém notas internas sobre processos seletivos;
+# fica fora do repositório público até Pedro decidir o contrário.
+context/
+fontes/
+manifesto.yaml
+Criacao-projeto-context.md
+.claude/
