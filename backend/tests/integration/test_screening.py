@@ -63,7 +63,8 @@ async def test_answers_with_evidence_or_asks_the_user(
     assert "FastAPI" in grounded["answer"]
     assert grounded["evidence_chunk_ids"] == [grounded["evidence"][0]["chunk_id"]]
 
-    resume = await ResumeRepository(db_session, user_a.id).get(uuid.UUID(resume_id))
+    resumes = ResumeRepository(db_session, user_a.id)
+    resume = await resumes.get(uuid.UUID(resume_id), with_chunks=True)
     assert resume is not None
     contents = {str(c.id): c.content for c in resume.chunks}
     assert grounded["evidence"][0]["quote"] in contents[grounded["evidence"][0]["chunk_id"]]

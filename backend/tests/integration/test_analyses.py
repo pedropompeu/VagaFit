@@ -111,7 +111,8 @@ async def test_runner_produces_literal_evidence_from_this_resume(
     assert detail["score"] == result["score"] == 77
     assert [g["text"] for g in result["gaps"]] == ["Kubernetes"]
 
-    resume = await ResumeRepository(db_session, user_a.id).get(uuid.UUID(resume_id))
+    resumes = ResumeRepository(db_session, user_a.id)
+    resume = await resumes.get(uuid.UUID(resume_id), with_chunks=True)
     assert resume is not None
     contents = {c.id: c.content for c in resume.chunks}
     for req in result["requirements"]:

@@ -15,6 +15,7 @@ from app.core.errors import UnauthorizedError
 from app.db.session import get_session
 from app.models.user import User
 from app.services.analysis import AnalysisService
+from app.services.applications import ApplicationService
 from app.services.auth import AuthService
 from app.services.jobs import JobService
 from app.services.resumes import ResumeService
@@ -122,3 +123,10 @@ def get_screening_service(
 
 
 ScreeningServiceDep = Annotated[ScreeningService, Depends(get_screening_service)]
+
+
+def get_application_service(session: SessionDep, user: CurrentUserDep) -> ApplicationService:
+    return ApplicationService(session, user.id)
+
+
+ApplicationServiceDep = Annotated[ApplicationService, Depends(get_application_service)]
