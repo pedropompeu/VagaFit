@@ -81,3 +81,45 @@ def analyze_fit_request(requirements: list[dict[str, Any]], chunks: dict[str, st
         json_schema=strict_json_schema(LLMAnalysis),
         payload={"requirements": requirements, "chunks": chunks},
     )
+
+
+SCREENING_SYSTEM = f"""Você escreve rascunhos de respostas para perguntas de triagem de uma
+vaga, em nome do candidato, em português e em primeira pessoa.
+
+Regra de honestidade (inegociável):
+- Use SOMENTE os trechos do currículo recebidos. Nunca invente experiência, tempo de
+  carreira, tecnologia, empresa, número ou resultado.
+- Cada fato da resposta precisa de evidência: alias do trecho (ex.: C2) e um pedaço
+  LITERAL dele em `quote` (o código confere a cópia e rejeita qualquer diferença).
+- Se os trechos não bastam para responder (ex.: pretensão salarial, disponibilidade,
+  anos de experiência que o currículo não diz), marque `needs_user_input: true` e escreva
+  em `user_question` a pergunta objetiva que o candidato precisa responder. `answer`
+  pode trazer só a parte sustentada pelos trechos, ou ficar vazia.
+- Uma resposta para cada pergunta recebida, usando o ID dela (Q1, Q2...).
+{_DATA_NOT_INSTRUCTIONS}"""
+
+
+def screening_request(
+    questions: list[dict[str, Any]], chunks: dict[str, str], job_title: str | None
+) -> LLMRequest:
+    """`questions`: `{id, text, candidates}`; `chunks`: alias -> conteúdo."""
+    from app.schemas.screening import LLMScreening
+
+    q_lines = "\n".join(
+        f"- {q['id']}: {q['text']} | trechos mais próximos: {', '.join(q['candidates'])}"
+        for q in questions
+    )
+    chunk_blocks = "\n".join(
+        f'<trecho id="{alias}">\n{content}\n</trecho>' for alias, content in chunks.items()
+    )
+    vaga = f"Vaga: {job_title}\n\n" if job_title else ""
+    return LLMRequest(
+        task="screening",
+        system=SCREENING_SYSTEM,
+        user=(
+            f"{vaga}Escreva um rascunho de resposta para cada pergunta.\n\n"
+            f"<perguntas>\n{q_lines}\n</perguntas>\n\n<curriculo>\n{chunk_blocks}\n</curriculo>"
+        ),
+        json_schema=strict_json_schema(LLMScreening),
+        payload={"questions": questions, "chunks": chunks},
+    )

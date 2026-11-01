@@ -5,7 +5,7 @@ import uuid
 from app.models.resume import ResumeChunk
 from app.schemas.analysis import LLMAnalysis
 from app.schemas.extraction import JobExtraction, Requirement
-from app.services.analysis import _Context, _Validator, build_result
+from app.services.analysis import RetrievedContext, _Validator, build_result
 
 CHUNK = "EXPERIÊNCIA\n- Criei APIs REST em FastAPI.\n- Usei PostgreSQL e Redis em produção."
 
@@ -25,9 +25,9 @@ EXTRACTION = JobExtraction(
 )
 
 
-def _ctx() -> _Context:
+def _ctx() -> RetrievedContext:
     chunk = ResumeChunk(id=uuid.uuid4(), content=CHUNK, ordinal=0)
-    return _Context(chunks={"C1": chunk}, candidates={"R1": ["C1"], "R2": ["C1"]})
+    return RetrievedContext(chunks={"C1": chunk}, candidates={"R1": ["C1"], "R2": ["C1"]})
 
 
 def _out(**overrides: object) -> LLMAnalysis:

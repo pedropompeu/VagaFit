@@ -154,6 +154,19 @@ _STOPWORDS = frozenset(
         "dominio",
         "uso",
         "nivel",
+        "qual",
+        "quais",
+        "quantos",
+        "quanto",
+        "voce",
+        "tem",
+        "sua",
+        "seu",
+        "suas",
+        "seus",
+        "como",
+        "por",
+        "que",
     }
 )
 
@@ -181,12 +194,7 @@ def analyze_fit(request: LLMRequest) -> dict[str, Any]:
     suggestions: list[dict[str, str]] = []
     for req in request.payload["requirements"]:
         keywords = _keywords(req["text"])
-        best: tuple[int, str, str] | None = None
-        for alias in req["candidates"]:
-            for line in chunks[alias].split("\n"):
-                hits = _hits(keywords, line) if keywords else 0
-                if hits and (best is None or hits > best[0]):
-                    best = (hits, alias, line.strip())
+        best = _best_line(keywords, chunks, req["candidates"])
         if best is None:
             verdicts.append(
                 {
@@ -218,9 +226,52 @@ def analyze_fit(request: LLMRequest) -> dict[str, Any]:
     return {"verdicts": verdicts, "suggestions": suggestions}
 
 
+def _best_line(
+    keywords: list[str], chunks: dict[str, str], aliases: list[str]
+) -> tuple[int, str, str] | None:
+    best: tuple[int, str, str] | None = None
+    for alias in aliases:
+        for line in chunks[alias].split("\n"):
+            hits = _hits(keywords, line) if keywords else 0
+            if hits and (best is None or hits > best[0]):
+                best = (hits, alias, line.strip())
+    return best
+
+
+def screening(request: LLMRequest) -> dict[str, Any]:
+    """Responde com a linha que menciona a pergunta; sem menção, pede input do usuário."""
+    chunks: dict[str, str] = request.payload["chunks"]
+    answers: list[dict[str, Any]] = []
+    for q in request.payload["questions"]:
+        best = _best_line(_keywords(q["text"]), chunks, q["candidates"])
+        if best is None:
+            answers.append(
+                {
+                    "question_id": q["id"],
+                    "answer": "",
+                    "evidence": [],
+                    "needs_user_input": True,
+                    "user_question": "O currículo não traz isso. Como você responderia?",
+                }
+            )
+            continue
+        _, alias, line = best
+        answers.append(
+            {
+                "question_id": q["id"],
+                "answer": f"Sim. No meu currículo: {line.lstrip('-•* ')}",
+                "evidence": [{"chunk": alias, "quote": line}],
+                "needs_user_input": False,
+                "user_question": None,
+            }
+        )
+    return {"answers": answers}
+
+
 DEFAULT_HANDLERS: dict[str, Handler] = {
     "extract_requirements": extract_requirements,
     "analyze_fit": analyze_fit,
+    "screening": screening,
 }
 
 

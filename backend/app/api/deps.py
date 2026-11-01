@@ -9,6 +9,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import EmbeddingProvider, build_embedding_provider
+from app.ai.llm import LLMProvider, build_llm_provider
 from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.db.session import get_session
@@ -17,6 +18,7 @@ from app.services.analysis import AnalysisService
 from app.services.auth import AuthService
 from app.services.jobs import JobService
 from app.services.resumes import ResumeService
+from app.services.screening import ScreeningService
 from app.worker.queue import CeleryTaskQueue, TaskQueue
 
 
@@ -98,3 +100,25 @@ def get_analysis_service(
 
 
 AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]
+
+
+@lru_cache
+def get_llm_provider() -> LLMProvider:
+    """Um cliente por processo, como o de embeddings. Testes sobrescrevem via override."""
+    return build_llm_provider(get_settings())
+
+
+LLMDep = Annotated[LLMProvider, Depends(get_llm_provider)]
+
+
+def get_screening_service(
+    session: SessionDep,
+    user: CurrentUserDep,
+    settings: SettingsDep,
+    llm: LLMDep,
+    embeddings: EmbeddingDep,
+) -> ScreeningService:
+    return ScreeningService(session, user.id, settings, llm, embeddings)
+
+
+ScreeningServiceDep = Annotated[ScreeningService, Depends(get_screening_service)]

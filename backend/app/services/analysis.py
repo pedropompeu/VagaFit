@@ -138,19 +138,53 @@ class AnalysisService:
 
 
 @dataclass(frozen=True)
-class _Context:
-    """O que foi mandado ao LLM: alias -> chunk, e candidatos por requisito."""
+class RetrievedContext:
+    """O que foi mandado ao LLM: alias -> chunk, e candidatos por item (requisito ou pergunta)."""
 
     chunks: dict[str, ResumeChunk]
     candidates: dict[str, list[str]]
 
 
-def _validate(extraction: JobExtraction, ctx: _Context) -> "_Validator":
-    return _Validator(extraction, ctx)
+async def retrieve(
+    resumes: ResumeRepository,
+    embeddings: EmbeddingProvider,
+    resume_id: uuid.UUID,
+    items: list[tuple[str, str]],
+    k: int,
+) -> RetrievedContext:
+    """Os k chunks mais próximos de cada item `(id, texto)`, dentro do currículo do dono.
+
+    A união dos chunks ganha aliases `C1..Cn` na ordem em que aparecem.
+    """
+    vectors = await embeddings.embed([text for _, text in items])
+    aliases: dict[uuid.UUID, str] = {}
+    chunks: dict[str, ResumeChunk] = {}
+    candidates: dict[str, list[str]] = {}
+    for (item_id, _), vector in zip(items, vectors, strict=True):
+        names = []
+        for match in await resumes.nearest_chunks(resume_id, vector, k=k):
+            alias = aliases.get(match.chunk.id)
+            if alias is None:
+                alias = f"C{len(aliases) + 1}"
+                aliases[match.chunk.id] = alias
+                chunks[alias] = match.chunk
+            names.append(alias)
+        candidates[item_id] = names
+    return RetrievedContext(chunks=chunks, candidates=candidates)
+
+
+def check_quote(ctx: RetrievedContext, where: str, alias: str, quote: str) -> list[str]:
+    """Regra de honestidade: alias enviado e citação literal. A mensagem não ecoa o texto."""
+    chunk = ctx.chunks.get(alias)
+    if chunk is None:
+        return [f"{where}: trecho {alias} não foi enviado; cite só os recebidos"]
+    if not quote_in_text(quote, chunk.content):
+        return [f"{where}: a citação não é cópia literal do trecho {alias}"]
+    return []
 
 
 class _Validator:
-    def __init__(self, extraction: JobExtraction, ctx: _Context) -> None:
+    def __init__(self, extraction: JobExtraction, ctx: RetrievedContext) -> None:
         self._expected = [r.id for r in extraction.requirements]
         self._ctx = ctx
 
@@ -170,25 +204,17 @@ class _Validator:
             if v.verdict == "not_met":
                 continue
             for j, ev in enumerate(v.evidence):
-                problems.extend(self._check_quote(f"{where}.evidence.{j}", ev.chunk, ev.quote))
+                problems.extend(check_quote(self._ctx, f"{where}.evidence.{j}", ev.chunk, ev.quote))
         missing = [rid for rid in self._expected if rid not in seen]
         if missing:
             problems.append(f"faltam vereditos para: {', '.join(missing)}")
         for k, s in enumerate(output.suggestions):
-            problems.extend(self._check_quote(f"suggestions.{k}", s.chunk, s.original))
+            problems.extend(check_quote(self._ctx, f"suggestions.{k}", s.chunk, s.original))
         return problems
-
-    def _check_quote(self, where: str, alias: str, quote: str) -> list[str]:
-        chunk = self._ctx.chunks.get(alias)
-        if chunk is None:
-            return [f"{where}: trecho {alias} não foi enviado; cite só os recebidos"]
-        if not quote_in_text(quote, chunk.content):
-            return [f"{where}: a citação não é cópia literal do trecho {alias}"]
-        return []
 
 
 def build_result(
-    extraction: JobExtraction, ctx: _Context, output: LLMAnalysis, model: str
+    extraction: JobExtraction, ctx: RetrievedContext, output: LLMAnalysis, model: str
 ) -> AnalysisResult:
     """Monta o resultado só com saída já validada. Lacunas e score saem do código."""
     by_id = {v.requirement_id: v for v in output.verdicts}
@@ -307,31 +333,20 @@ class AnalysisRunner:
             ],
             {alias: chunk.content for alias, chunk in ctx.chunks.items()},
         )
-        output = await structured_call(self._llm, request, LLMAnalysis, _validate(extraction, ctx))
+        output = await structured_call(self._llm, request, LLMAnalysis, _Validator(extraction, ctx))
         return build_result(extraction, ctx, output, self._llm.model)
 
-    async def _retrieve(self, resume_id: uuid.UUID, extraction: JobExtraction) -> _Context:
+    async def _retrieve(self, resume_id: uuid.UUID, extraction: JobExtraction) -> RetrievedContext:
         resumes = ResumeRepository(self._session, self._user_id)
         if await resumes.get(resume_id) is None:
             raise _MissingInputError
-        vectors = await self._embeddings.embed([r.text for r in extraction.requirements])
-        aliases: dict[uuid.UUID, str] = {}
-        chunks: dict[str, ResumeChunk] = {}
-        candidates: dict[str, list[str]] = {}
-        for req, vector in zip(extraction.requirements, vectors, strict=True):
-            matches = await resumes.nearest_chunks(
-                resume_id, vector, k=self._settings.analysis_top_k_chunks
-            )
-            names = []
-            for match in matches:
-                alias = aliases.get(match.chunk.id)
-                if alias is None:
-                    alias = f"C{len(aliases) + 1}"
-                    aliases[match.chunk.id] = alias
-                    chunks[alias] = match.chunk
-                names.append(alias)
-            candidates[req.id] = names
-        return _Context(chunks=chunks, candidates=candidates)
+        return await retrieve(
+            resumes,
+            self._embeddings,
+            resume_id,
+            [(r.id, r.text) for r in extraction.requirements],
+            self._settings.analysis_top_k_chunks,
+        )
 
     async def _fail(self, analysis_id: uuid.UUID, message: str, reason: str) -> str:
         await self._session.rollback()

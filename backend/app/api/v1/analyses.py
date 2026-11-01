@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Query, Request, status
 
-from app.api.deps import AnalysisServiceDep
+from app.api.deps import AnalysisServiceDep, ScreeningServiceDep
 from app.core.errors import ErrorResponse
 from app.core.rate_limit import rate_limit
 from app.models.analysis import Analysis
@@ -16,6 +16,7 @@ from app.schemas.analysis import (
     AnalysisRead,
     AnalysisResult,
 )
+from app.schemas.screening import ScreeningAnswerRead, ScreeningRequest
 
 router = APIRouter(prefix="/analyses", tags=["analyses"])
 
@@ -70,3 +71,44 @@ async def get_analysis(analysis_id: uuid.UUID, service: AnalysisServiceDep) -> A
         **_read(analysis).model_dump(),
         result=AnalysisResult.model_validate(analysis.result) if analysis.result else None,
     )
+
+
+@router.post(
+    "/{analysis_id}/screening",
+    status_code=status.HTTP_201_CREATED,
+    summary="Rascunhar respostas de triagem",
+    description=(
+        "Gera um rascunho por pergunta usando só trechos do currículo analisado, com a "
+        "evidência citada. Sem evidência suficiente, a resposta vem com "
+        "`needs_user_input: true` e `user_question` (o que o candidato precisa responder). "
+        "Exige análise `done`. Limite: 10/min por IP."
+    ),
+    responses={
+        404: {"model": ErrorResponse, "description": "Análise não encontrada"},
+        409: {"model": ErrorResponse, "description": "Análise ainda não terminou"},
+        429: {"model": ErrorResponse, "description": "Muitas requisições"},
+        502: {"model": ErrorResponse, "description": "Saída da IA reprovada na validação"},
+        503: {"model": ErrorResponse, "description": "IA indisponível"},
+    },
+)
+@rate_limit("10/minute")
+async def create_screening(
+    request: Request,
+    analysis_id: uuid.UUID,
+    body: ScreeningRequest,
+    service: ScreeningServiceDep,
+) -> list[ScreeningAnswerRead]:
+    answers = await service.answer(analysis_id, body)
+    return [ScreeningAnswerRead.model_validate(a) for a in answers]
+
+
+@router.get(
+    "/{analysis_id}/screening",
+    summary="Listar respostas de triagem",
+    description="Todas as respostas já geradas para a análise, das mais antigas às mais novas.",
+    responses=_ERR_404,
+)
+async def list_screening(
+    analysis_id: uuid.UUID, service: ScreeningServiceDep
+) -> list[ScreeningAnswerRead]:
+    return [ScreeningAnswerRead.model_validate(a) for a in await service.list_for(analysis_id)]
