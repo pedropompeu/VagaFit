@@ -146,7 +146,7 @@ async def seed(
 
     resumes = ResumeService(session, user_id, settings, embeddings)
     text = await resumes.resolve_text(text=RESUME_TEXT, file=None)
-    resume = (await resumes.create(title=RESUME_TITLE, text=text)).resume
+    resume_id = (await resumes.create(title=RESUME_TITLE, text=text)).resume.id
 
     report = SeedReport(created=True)
     jobs = JobService(session, user_id, queue)
@@ -155,12 +155,14 @@ async def seed(
     first_analysis = None
     for data in JOBS:
         job = await jobs.create(data)
-        await run_extraction_task(session, user_id, job.id, llm)
-        request = AnalysisCreate(resume_id=resume.id, job_id=job.id)
+        # Lidos antes: falha de IA faz rollback e expira os objetos da sessão.
+        job_id, title = job.id, job.title or ""
+        await run_extraction_task(session, user_id, job_id, llm)
+        request = AnalysisCreate(resume_id=resume_id, job_id=job_id)
         created = (await analyses.create(request)).analysis
         status = await runner.run(created.id)
         await session.refresh(created)
-        report.analyses.append((job.title or "", status, created.score))
+        report.analyses.append((title, status, created.score))
         if first_analysis is None and status == "done":
             first_analysis = created
 

@@ -1,9 +1,13 @@
+from typing import Any
+
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import FakeEmbeddingProvider
+from app.ai.errors import AIProviderError
 from app.ai.fake_llm import FakeLLMProvider
+from app.ai.llm import LLMRequest
 from app.core.config import get_settings
 from app.models.application import Application
 from app.models.user import User
@@ -30,6 +34,21 @@ async def test_seed_runs_the_whole_flow_with_fake_providers(db_session: AsyncSes
     assert all(score is not None for _, _, score in report.analyses)
     assert report.screening_needs_input >= 1, "Kubernetes não está no currículo fictício"
     assert await db_session.scalar(select(func.count()).select_from(Application)) == 1
+
+
+async def test_seed_survives_ai_outage(db_session: AsyncSession) -> None:
+    def unavailable(_request: LLMRequest) -> dict[str, Any]:
+        raise AIProviderError()
+
+    llm = FakeLLMProvider(
+        handlers={"extract_requirements": unavailable, "analyze_fit": unavailable}
+    )
+
+    report = await seed(db_session, get_settings(), llm, FakeEmbeddingProvider())
+
+    assert report.created is True
+    assert [status for _, status, _ in report.analyses] == ["failed", "failed"]
+    assert all(title for title, _, _ in report.analyses)
 
 
 async def test_seed_is_idempotent_and_reset_recreates(db_session: AsyncSession) -> None:
