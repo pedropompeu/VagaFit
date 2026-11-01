@@ -8,7 +8,7 @@ import openai
 import pytest
 from pydantic import BaseModel, Field
 
-from app.ai.errors import AIProviderError
+from app.ai.errors import AIProviderError, AIQuotaExceededError
 from app.ai.fake_llm import FakeLLMProvider
 from app.ai.llm import (
     AnthropicLLMProvider,
@@ -247,3 +247,61 @@ async def test_gemini_llm_uses_google_endpoint_and_model() -> None:
     assert provider.model == "gemini-3.8-flash"
     assert str(provider._client.base_url) == settings.gemini_base_url
     await provider.aclose()
+
+
+_GEMINI_QUOTA_BODY = [
+    {
+        "error": {
+            "code": 429,
+            "message": "You exceeded your current quota, please check your plan and billing.",
+            "status": "RESOURCE_EXHAUSTED",
+        }
+    }
+]
+
+
+def _openai_rate_limit(message: str, body: object) -> Exception:
+    import httpx
+
+    request = httpx.Request("POST", "https://api.openai.test/v1/chat/completions")
+    return openai.RateLimitError(message, response=httpx.Response(429, request=request), body=body)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        # Forma do endpoint compatível do Gemini: corpo em lista, sem `code`.
+        _openai_rate_limit(f"Error code: 429 - {_GEMINI_QUOTA_BODY}", _GEMINI_QUOTA_BODY),
+        # Forma da OpenAI: `code="insufficient_quota"`.
+        _openai_rate_limit(
+            "Error code: 429 - insufficient quota",
+            {"code": "insufficient_quota", "message": "quota", "type": "insufficient_quota"},
+        ),
+    ],
+)
+async def test_exhausted_quota_fails_at_once(error: Exception) -> None:
+    provider, calls = _openai([error, _openai_response('{"value": 1}')])
+
+    with pytest.raises(AIQuotaExceededError):
+        await provider.complete_json(_request())
+    assert len(calls.calls) == 1
+
+
+async def test_per_minute_rate_limit_is_still_retried() -> None:
+    error = _openai_rate_limit(
+        "Error code: 429 - Rate limit reached for requests",
+        {"code": "rate_limit_exceeded", "message": "Rate limit reached", "type": "requests"},
+    )
+    provider, calls = _openai([error, _openai_response('{"value": 6}')])
+
+    assert json.loads(await provider.complete_json(_request())) == {"value": 6}
+    assert len(calls.calls) == 2
+
+
+async def test_exhausted_quota_is_not_retried_by_structured_call() -> None:
+    error = _openai_rate_limit(f"Error code: 429 - {_GEMINI_QUOTA_BODY}", _GEMINI_QUOTA_BODY)
+    provider, calls = _openai([error, _openai_response('{"value": 1}')])
+
+    with pytest.raises(AIProviderError):
+        await structured_call(provider, _request(), Answer)
+    assert len(calls.calls) == 1

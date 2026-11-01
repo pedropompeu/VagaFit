@@ -12,7 +12,7 @@ from app.ai.embeddings import (
     OpenAIEmbeddingProvider,
     build_embedding_provider,
 )
-from app.ai.errors import AIProviderError
+from app.ai.errors import AIProviderError, AIQuotaExceededError
 from app.core.config import Settings
 
 
@@ -173,3 +173,17 @@ async def test_gemini_embeddings_use_google_endpoint_and_model() -> None:
     assert provider.model == "gemini-embedding-001"
     assert str(provider._client.base_url) == settings.gemini_base_url
     await provider.aclose()
+
+
+async def test_exhausted_quota_is_not_retried() -> None:
+    request = httpx.Request("POST", "https://api.openai.test/v1/embeddings")
+    body = {"code": "insufficient_quota", "message": "quota", "type": "insufficient_quota"}
+    error = openai.RateLimitError(
+        "Error code: 429", response=httpx.Response(429, request=request), body=body
+    )
+    client, api = _client([error, None])
+    provider = OpenAIEmbeddingProvider(_settings(), client=client)
+
+    with pytest.raises(AIQuotaExceededError):
+        await provider.embed(["a"])
+    assert len(api.calls) == 1

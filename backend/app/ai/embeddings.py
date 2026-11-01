@@ -8,7 +8,12 @@ from typing import Literal, Protocol
 import openai
 import structlog
 
-from app.ai.errors import AIProviderError, RetryableAIError
+from app.ai.errors import (
+    AIProviderError,
+    AIQuotaExceededError,
+    RetryableAIError,
+    is_quota_exhausted,
+)
 from app.ai.retry import retry_with_backoff
 from app.core.config import Settings
 from app.services.text import strip_accents
@@ -40,6 +45,7 @@ class OpenAIEmbeddingProvider:
         *,
         provider: Literal["openai", "gemini"] = "openai",
     ) -> None:
+        self._provider = provider
         if client is None:
             api_key, base_url = settings.openai_compatible_endpoint(provider)
             if api_key is None:
@@ -70,7 +76,12 @@ class OpenAIEmbeddingProvider:
                 response = await self._client.embeddings.create(
                     model=self.model, input=batch, dimensions=EMBEDDING_DIMENSIONS
                 )
-            except (openai.RateLimitError, openai.APIConnectionError) as exc:
+            except openai.RateLimitError as exc:
+                if is_quota_exhausted(exc):
+                    logger.warning("embedding_quota_exhausted", provider=self._provider)
+                    raise AIQuotaExceededError() from exc
+                raise RetryableAIError(type(exc).__name__) from exc
+            except openai.APIConnectionError as exc:
                 raise RetryableAIError(type(exc).__name__) from exc
             except openai.APIStatusError as exc:
                 if exc.status_code >= 500:

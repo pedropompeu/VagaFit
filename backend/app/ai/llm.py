@@ -18,7 +18,12 @@ import openai
 import structlog
 from pydantic import BaseModel, ValidationError
 
-from app.ai.errors import AIProviderError, RetryableAIError
+from app.ai.errors import (
+    AIProviderError,
+    AIQuotaExceededError,
+    RetryableAIError,
+    is_quota_exhausted,
+)
 from app.ai.retry import retry_with_backoff
 from app.core.config import Settings
 
@@ -190,6 +195,7 @@ class OpenAILLMProvider(_BaseProvider):
         provider: Literal["openai", "gemini"] = "openai",
     ) -> None:
         super().__init__(settings)
+        self._provider = provider
         if client is None:
             api_key, base_url = settings.openai_compatible_endpoint(provider)
             if api_key is None:
@@ -224,7 +230,14 @@ class OpenAILLMProvider(_BaseProvider):
                         },
                     },
                 )
-            except (openai.RateLimitError, openai.APIConnectionError) as exc:
+            except openai.RateLimitError as exc:
+                if is_quota_exhausted(exc):
+                    logger.warning(
+                        "llm_quota_exhausted", task=request.task, provider=self._provider
+                    )
+                    raise AIQuotaExceededError() from exc
+                raise RetryableAIError(type(exc).__name__) from exc
+            except openai.APIConnectionError as exc:
                 raise RetryableAIError(type(exc).__name__) from exc
             except openai.APIStatusError as exc:
                 if exc.status_code >= 500:
