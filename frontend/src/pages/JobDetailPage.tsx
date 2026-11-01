@@ -9,6 +9,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
+import { LinkButton } from "../components/ui/LinkButton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { PageLoader } from "../components/ui/PageLoader";
 import { Spinner } from "../components/ui/Spinner";
@@ -103,9 +104,12 @@ export function JobDetailPage() {
         title={job.title}
         description={`${company} · ${formatDateTime(job.created_at)}`}
         actions={
-          <Button variant="dangerGhost" onClick={openDeleteDialog}>
-            Apagar
-          </Button>
+          <>
+            <LinkButton to={`/analises/nova?vaga=${job.id}`}>Analisar com um currículo</LinkButton>
+            <Button variant="dangerGhost" onClick={openDeleteDialog}>
+              Apagar
+            </Button>
+          </>
         }
       />
 

@@ -6,11 +6,16 @@ import { AuthProvider } from "./auth/AuthContext";
 import { PublicOnly, RequireAuth } from "./auth/guards";
 import { AppLayout } from "./components/layout/AppLayout";
 import { isClientError } from "./lib/errors";
+import { AnalysesPage } from "./pages/AnalysesPage";
+import { AnalysisResultPage } from "./pages/AnalysisResultPage";
+import { EditApplicationPage, NewApplicationPage } from "./pages/ApplicationFormPage";
+import { ApplicationsPage } from "./pages/ApplicationsPage";
 import { JobDetailPage } from "./pages/JobDetailPage";
 import { JobsPage } from "./pages/JobsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewJobPage } from "./pages/NewJobPage";
 import { NewResumePage } from "./pages/NewResumePage";
+import { NewAnalysisPage } from "./pages/NewAnalysisPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ResumeDetailPage } from "./pages/ResumeDetailPage";
@@ -58,6 +63,12 @@ export function App() {
                 <Route path="vagas" element={<JobsPage />} />
                 <Route path="vagas/nova" element={<NewJobPage />} />
                 <Route path="vagas/:jobId" element={<JobDetailPage />} />
+                <Route path="analises" element={<AnalysesPage />} />
+                <Route path="analises/nova" element={<NewAnalysisPage />} />
+                <Route path="analises/:analysisId" element={<AnalysisResultPage />} />
+                <Route path="candidaturas" element={<ApplicationsPage />} />
+                <Route path="candidaturas/nova" element={<NewApplicationPage />} />
+                <Route path="candidaturas/:applicationId/editar" element={<EditApplicationPage />} />
                 <Route path="configuracoes" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

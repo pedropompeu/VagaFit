@@ -9,6 +9,7 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
+import { LinkButton } from "../components/ui/LinkButton";
 import { PageHeader } from "../components/ui/PageHeader";
 import { PageLoader } from "../components/ui/PageLoader";
 import { getApiErrorMessage } from "../lib/errors";
@@ -80,9 +81,12 @@ export function ResumeDetailPage() {
         title={resume.title}
         description={`Enviado em ${formatDateTime(resume.created_at)} · ${formatChunkCount(resume.chunks.length)}`}
         actions={
-          <Button variant="dangerGhost" onClick={openDeleteDialog}>
-            Apagar
-          </Button>
+          <>
+            <LinkButton to={`/analises/nova?curriculo=${resume.id}`}>Analisar com uma vaga</LinkButton>
+            <Button variant="dangerGhost" onClick={openDeleteDialog}>
+              Apagar
+            </Button>
+          </>
         }
       />
 

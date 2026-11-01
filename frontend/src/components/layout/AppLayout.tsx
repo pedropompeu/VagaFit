@@ -12,19 +12,6 @@ function navLinkClass({ isActive }: { isActive: boolean }): string {
   );
 }
 
-function UpcomingItem({ label }: { label: string }) {
-  return (
-    <span
-      aria-disabled="true"
-      title="Em breve"
-      className="inline-flex cursor-not-allowed items-center gap-2xs rounded-md px-xs py-2xs text-sm font-medium text-muted"
-    >
-      {label}
-      <span className="rounded-full bg-canvas px-2xs text-xs font-normal">em breve</span>
-    </span>
-  );
-}
-
 export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -61,11 +48,15 @@ export function AppLayout() {
               <NavLink to="/vagas" className={navLinkClass}>
                 Vagas
               </NavLink>
+              <NavLink to="/analises" className={navLinkClass}>
+                Análises
+              </NavLink>
+              <NavLink to="/candidaturas" className={navLinkClass}>
+                Candidaturas
+              </NavLink>
               <NavLink to="/configuracoes" className={navLinkClass}>
                 Configurações
               </NavLink>
-              <UpcomingItem label="Análises" />
-              <UpcomingItem label="Candidaturas" />
             </nav>
           </div>
 
