@@ -22,6 +22,7 @@ def test_accepts_strong_secret_in_production() -> None:
         llm_provider="anthropic",
         openai_api_key="sk-teste",  # type: ignore[arg-type]
         anthropic_api_key="sk-ant-teste",  # type: ignore[arg-type]
+        metrics_token="m" * 32,  # type: ignore[arg-type]
     )
 
     assert settings.jwt_secret.get_secret_value() == "p" * 48
@@ -37,7 +38,11 @@ def test_refresh_cookie_is_scoped_to_auth_routes() -> None:
 
 def test_rejects_fake_ai_in_production() -> None:
     with pytest.raises(ValidationError, match="fake"):
-        Settings(environment="production", jwt_secret="p" * 48)  # type: ignore[arg-type]
+        Settings(
+            environment="production",
+            jwt_secret="p" * 48,  # type: ignore[arg-type]
+            metrics_token="m" * 32,  # type: ignore[arg-type]
+        )
 
 
 def test_requires_openai_key() -> None:

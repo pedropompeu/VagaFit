@@ -1,4 +1,12 @@
-from httpx import AsyncClient
+import pytest
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+
+from app.core.config import Settings
+from app.core.errors import register_exception_handlers
+from app.core.metrics import instrument
+
+TOKEN = "t" * 32
 
 
 async def test_metrics_endpoint_exposes_http_and_business_metrics(client: AsyncClient) -> None:
@@ -45,3 +53,46 @@ def test_each_app_instance_is_instrumented() -> None:
     assert first is not second
     for app in (first, second):
         assert any(getattr(r, "path", None) == "/metrics" for r in app.routes)
+
+
+async def _get_metrics(settings: Settings, headers: dict[str, str] | None = None) -> int:
+    app = FastAPI()
+    register_exception_handlers(app)
+    instrument(app, settings)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        return (await client.get("/metrics", headers=headers or {})).status_code
+
+
+async def test_metrics_with_token_requires_bearer() -> None:
+    settings = Settings(metrics_token=TOKEN)  # type: ignore[arg-type]
+
+    assert await _get_metrics(settings, {"Authorization": f"Bearer {TOKEN}"}) == 200
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [None, {"Authorization": "Bearer errado"}, {"Authorization": TOKEN}],
+)
+async def test_metrics_hides_itself_without_the_right_token(
+    headers: dict[str, str] | None,
+) -> None:
+    settings = Settings(metrics_token=TOKEN)  # type: ignore[arg-type]
+
+    assert await _get_metrics(settings, headers) == 404
+
+
+def test_production_requires_metrics_token() -> None:
+    with pytest.raises(ValueError, match="METRICS_TOKEN"):
+        Settings(
+            environment="production",
+            jwt_secret="p" * 40,  # type: ignore[arg-type]
+            llm_provider="openai",
+            embedding_provider="openai",
+            openai_api_key="sk-teste",  # type: ignore[arg-type]
+        )
+
+
+def test_short_metrics_token_is_refused() -> None:
+    with pytest.raises(ValueError, match="32 caracteres"):
+        Settings(metrics_token="curto")  # type: ignore[arg-type]

@@ -9,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Segredo conhecido, aceito só em `local` e `test`. Em produção a aplicação não sobe com ele.
 DEV_JWT_SECRET = "dev-only-insecure-jwt-secret-change-me-0000"  # noqa: S105
 MIN_JWT_SECRET_BYTES = 32
+MIN_METRICS_TOKEN_CHARS = 32
 
 
 class Settings(BaseSettings):
@@ -71,6 +72,10 @@ class Settings(BaseSettings):
     resume_max_text_chars: int = Field(default=50_000, gt=0)
     pdf_extraction_timeout_seconds: float = Field(default=10.0, gt=0)
 
+    # Métricas: com token, `/metrics` exige `Authorization: Bearer <token>`. Obrigatório em
+    # produção; sem token (desenvolvimento), a rota fica aberta.
+    metrics_token: SecretStr | None = None
+
     # Análises
     analysis_top_k_chunks: int = Field(default=3, ge=1, le=10)
     # Análise `pending`/`running` mais velha que isto não é reaproveitada (worker caiu).
@@ -83,6 +88,17 @@ class Settings(BaseSettings):
             raise ValueError(f"JWT_SECRET precisa de pelo menos {MIN_JWT_SECRET_BYTES} bytes.")
         if self.environment == "production" and secret == DEV_JWT_SECRET:
             raise ValueError("JWT_SECRET padrão de desenvolvimento não é aceito em produção.")
+        return self
+
+    @model_validator(mode="after")
+    def _check_metrics_token(self) -> "Settings":
+        token = self.metrics_token.get_secret_value() if self.metrics_token else ""
+        if self.environment == "production" and not token:
+            raise ValueError("METRICS_TOKEN é obrigatório em produção.")
+        if token and len(token) < MIN_METRICS_TOKEN_CHARS:
+            raise ValueError(
+                f"METRICS_TOKEN precisa de pelo menos {MIN_METRICS_TOKEN_CHARS} caracteres."
+            )
         return self
 
     @model_validator(mode="after")

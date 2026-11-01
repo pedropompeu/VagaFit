@@ -197,7 +197,9 @@ Os logs são JSON, gerados pelo structlog. Um processor (`redact_sensitive`) tro
 qualquer valor com mais de 200 caracteres. Os logs levam só IDs, contagens e o score. O
 `/metrics` (Prometheus) expõe latência e contagem por rota e status, mais os contadores de
 negócio: falhas de login, reuso de refresh detectado e análises novas ou reaproveitadas. Nenhum
-rótulo carrega ID, e-mail ou texto.
+rótulo carrega ID, e-mail ou texto. Com `METRICS_TOKEN`, que é obrigatório em produção, a rota
+exige `Authorization: Bearer <token>` e responde 404 a quem não tem o token. Sem ele, no
+desenvolvimento, a rota fica aberta.
 
 ## Endpoints
 
@@ -207,7 +209,7 @@ completo fica em `/docs`.
 | Método | Rota | O que faz |
 |---|---|---|
 | GET | `/health` | Estado da API, do banco e do Redis (fora de `/api/v1`) |
-| GET | `/metrics` | Métricas Prometheus (fora de `/api/v1` e do schema) |
+| GET | `/metrics` | Métricas Prometheus (fora de `/api/v1` e do schema; Bearer `METRICS_TOKEN` em produção) |
 | POST | `/auth/register` · `/auth/login` | Criar conta · entrar (rate limit) |
 | POST | `/auth/refresh` · `/auth/logout` | Renovar o access token · sair (cookie) |
 | GET · DELETE | `/auth/me` | Usuário atual · excluir a conta com tudo dela (exige a senha) |
@@ -242,6 +244,7 @@ completo fica em `/docs`.
 - [ ] GIF da demo e deploy público com cota diária por conta.
 - [x] Testes de componente no front (Vitest).
 - [ ] Testes e2e no front.
-- [ ] Métricas do worker (exporter próprio) e `/metrics` protegido na rede interna.
+- [x] `/metrics` protegido por token (`METRICS_TOKEN`).
+- [ ] Métricas do worker (exporter próprio).
 - [ ] Ler a vaga a partir de uma URL e extensão de navegador.
 - [ ] Recuperação de senha e verificação de e-mail.

@@ -10,11 +10,17 @@ no mesmo processo (os testes criam várias) encontra as métricas HTTP já regis
 instrumentator desliga a instrumentação sem avisar. Os contadores de negócio não são
 registrados em lugar nenhum na criação; cada app os registra no seu registro.
 
+Com `METRICS_TOKEN` (obrigatório em produção), a rota exige `Authorization: Bearer <token>` e
+responde 404 a quem não o tem, como se não existisse: contagem de logins recusados e rotas
+mais usadas ajudam quem quer atacar. Sem token, em desenvolvimento, fica aberta.
+
 O worker roda em outro processo e não é exposto aqui; métricas do worker entram quando
 houver um exporter próprio (ver `context/achados.md`).
 """
 
-from fastapi import FastAPI
+import hmac
+
+from fastapi import Depends, FastAPI, Request
 from prometheus_client import (
     GC_COLLECTOR,
     PLATFORM_COLLECTOR,
@@ -23,6 +29,9 @@ from prometheus_client import (
     Counter,
 )
 from prometheus_fastapi_instrumentator import Instrumentator
+
+from app.core.config import Settings
+from app.core.errors import NotFoundError
 
 METRICS_PATH = "/metrics"
 
@@ -45,7 +54,20 @@ ANALYSES_REQUESTED = Counter(
 BUSINESS_METRICS = (AUTH_LOGIN_FAILURES, AUTH_REFRESH_REUSE_DETECTED, ANALYSES_REQUESTED)
 
 
-def instrument(app: FastAPI) -> CollectorRegistry:
+def _require_token(settings: Settings) -> list[object]:
+    if settings.metrics_token is None:
+        return []
+    expected = f"Bearer {settings.metrics_token.get_secret_value()}".encode()
+
+    def check(request: Request) -> None:
+        given = request.headers.get("Authorization", "").encode()
+        if not hmac.compare_digest(given, expected):
+            raise NotFoundError("Recurso não encontrado.")
+
+    return [Depends(check)]
+
+
+def instrument(app: FastAPI, settings: Settings) -> CollectorRegistry:
     registry = CollectorRegistry()
     for collector in (*BUSINESS_METRICS, PROCESS_COLLECTOR, PLATFORM_COLLECTOR, GC_COLLECTOR):
         registry.register(collector)
@@ -53,5 +75,10 @@ def instrument(app: FastAPI) -> CollectorRegistry:
         registry=registry,
         excluded_handlers=[METRICS_PATH, "/health"],
         should_group_status_codes=False,
-    ).instrument(app).expose(app, endpoint=METRICS_PATH, include_in_schema=False)
+    ).instrument(app).expose(
+        app,
+        endpoint=METRICS_PATH,
+        include_in_schema=False,
+        dependencies=_require_token(settings),
+    )
     return registry

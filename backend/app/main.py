@@ -61,7 +61,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     app.include_router(health_router)
-    instrument(app)
+    instrument(app, settings)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     return app
 
