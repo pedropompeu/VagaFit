@@ -42,6 +42,27 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_storage_url: str | None = None
 
+    # IA. `fake` é determinístico e não chama API externa: padrão para rodar sem chaves.
+    embedding_provider: Literal["openai", "fake"] = "fake"
+    llm_provider: Literal["anthropic", "openai", "fake"] = "fake"
+    openai_api_key: SecretStr | None = None
+    anthropic_api_key: SecretStr | None = None
+    openai_embedding_model: str = "text-embedding-3-small"
+    openai_llm_model: str = "gpt-4.1-mini"
+    anthropic_llm_model: str = "claude-opus-5-5"
+    llm_max_output_tokens: int = Field(default=8000, gt=0)
+    ai_request_timeout_seconds: float = Field(default=60.0, gt=0)
+    # Backoff exponencial em rate limit e falha transitória do provedor.
+    ai_max_attempts: int = Field(default=5, ge=1)
+    ai_backoff_base_seconds: float = Field(default=1.0, ge=0)
+    ai_backoff_max_seconds: float = Field(default=30.0, ge=0)
+
+    # Currículos
+    resume_max_upload_bytes: int = Field(default=5 * 1024 * 1024, gt=0)
+    resume_max_pdf_pages: int = Field(default=10, gt=0)
+    resume_max_text_chars: int = Field(default=50_000, gt=0)
+    pdf_extraction_timeout_seconds: float = Field(default=10.0, gt=0)
+
     @model_validator(mode="after")
     def _check_jwt_secret(self) -> "Settings":
         secret = self.jwt_secret.get_secret_value()
@@ -49,6 +70,19 @@ class Settings(BaseSettings):
             raise ValueError(f"JWT_SECRET precisa de pelo menos {MIN_JWT_SECRET_BYTES} bytes.")
         if self.environment == "production" and secret == DEV_JWT_SECRET:
             raise ValueError("JWT_SECRET padrão de desenvolvimento não é aceito em produção.")
+        return self
+
+    @model_validator(mode="after")
+    def _check_ai_providers(self) -> "Settings":
+        if self.environment == "production" and "fake" in (
+            self.embedding_provider,
+            self.llm_provider,
+        ):
+            raise ValueError("Provedor de IA `fake` não é aceito em produção.")
+        if "openai" in (self.embedding_provider, self.llm_provider) and not self.openai_api_key:
+            raise ValueError("OPENAI_API_KEY é obrigatória com provedor `openai`.")
+        if self.llm_provider == "anthropic" and not self.anthropic_api_key:
+            raise ValueError("ANTHROPIC_API_KEY é obrigatória com LLM_PROVIDER=anthropic.")
         return self
 
     @property

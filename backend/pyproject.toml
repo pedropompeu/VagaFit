@@ -22,6 +22,9 @@ dependencies = [
     "pyjwt>=2.9",
     "argon2-cffi>=23.1",
     "slowapi>=0.1.9",
+    "python-multipart>=0.0.9",
+    "pypdf>=5.0",
+    "openai>=1.50",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +70,7 @@ plugins = ["pydantic.mypy"]
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["celery", "celery.*", "kombu", "kombu.*"]
+module = ["celery", "celery.*", "kombu", "kombu.*", "pgvector", "pgvector.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

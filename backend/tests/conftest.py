@@ -4,6 +4,9 @@ os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("LOG_JSON", "false")
 # Rate limit em memória nos testes (o CI não tem Redis); ligado só nos testes de limite.
 os.environ.setdefault("RATE_LIMIT_STORAGE_URL", "memory://")
+# Provedores falsos sempre: nenhum teste chama API externa, mesmo com chave no `.env`.
+os.environ["EMBEDDING_PROVIDER"] = "fake"
+os.environ["LLM_PROVIDER"] = "fake"
 
 from collections.abc import AsyncIterator, Iterator
 

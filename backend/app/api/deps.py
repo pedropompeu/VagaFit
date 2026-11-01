@@ -1,5 +1,6 @@
 """Dependências compartilhadas pelos routers. Tudo entra via `Depends`."""
 
+from functools import lru_cache
 from typing import Annotated, Protocol
 
 import structlog
@@ -7,11 +8,13 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.embeddings import EmbeddingProvider, build_embedding_provider
 from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.db.session import get_session
 from app.models.user import User
 from app.services.auth import AuthService
+from app.services.resumes import ResumeService
 
 
 class PingableCache(Protocol):
@@ -50,3 +53,21 @@ async def get_current_user(
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+@lru_cache
+def get_embedding_provider() -> EmbeddingProvider:
+    """Um cliente por processo (reaproveita conexões HTTP). Testes sobrescrevem via override."""
+    return build_embedding_provider(get_settings())
+
+
+EmbeddingDep = Annotated[EmbeddingProvider, Depends(get_embedding_provider)]
+
+
+def get_resume_service(
+    session: SessionDep, user: CurrentUserDep, settings: SettingsDep, embeddings: EmbeddingDep
+) -> ResumeService:
+    return ResumeService(session, user.id, settings, embeddings)
+
+
+ResumeServiceDep = Annotated[ResumeService, Depends(get_resume_service)]

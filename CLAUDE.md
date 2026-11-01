@@ -42,7 +42,13 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 - Saída estruturada validada por Pydantic. Retry com backoff exponencial em rate limit.
 - Cache de análise: SHA-256 de (currículo, vaga, modelo, versão do prompt).
 - Chunking estrutural: um chunk por experiência (empresa + período + bullets) ou seção
-  curta, teto de ~250 tokens, sobreposição só quando um bloco estoura o teto.
+  curta, teto de ~250 tokens, sobreposição só quando um bloco estoura o teto
+  (`app/services/chunking.py`, função pura).
+- Provedor `fake` é o padrão local e de teste e é recusado em produção. Retry próprio
+  (`app/ai/retry.py`) com o retry dos SDKs desligado; falha esgotada vira 503 `ai_unavailable`.
+- Citação: use `app.services.text.quote_in_text` (mesma normalização em todo lugar).
+- Busca vetorial sempre dentro de um currículo do usuário (`ResumeRepository.nearest_chunks`),
+  sem índice ANN de propósito.
 
 ## Segurança
 
@@ -65,6 +71,6 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 
 ## Fases
 
-0. Setup ✅ · 1. Autenticação · 2. Currículos · 3. Vagas · 4. Worker de análise ·
+0. Setup ✅ · 1. Autenticação ✅ · 2. Currículos ✅ · 3. Vagas · 4. Worker de análise ·
 5. Triagem · 6. Candidaturas · 7. Frontend (exige `BRAND.md`) · 8. Observabilidade,
 seed e README.
