@@ -48,9 +48,14 @@ Depois, abra http://localhost:5173 e entre com `demo@vagafit.example` / `demo-va
 Essa conta existe só localmente, os dados são inventados e o seed se recusa a rodar em
 produção. A documentação interativa da API fica em http://localhost:8000/docs.
 
-Para usar IA de verdade, copie `.env.example` para `.env` e preencha `LLM_PROVIDER`,
-`ANTHROPIC_API_KEY` (ou `OPENAI_API_KEY`) e `EMBEDDING_PROVIDER=openai` com a
-`OPENAI_API_KEY`. Se alguma porta estiver ocupada, ajuste `API_PORT`, `WEB_PORT` e
+Para usar IA de verdade, copie `.env.example` para `.env` e escolha os provedores:
+
+- **Gemini, uma chave só:** `LLM_PROVIDER=gemini`, `EMBEDDING_PROVIDER=gemini` e
+  `GEMINI_API_KEY` (crie em aistudio.google.com).
+- **Anthropic + OpenAI:** `LLM_PROVIDER=anthropic` com `ANTHROPIC_API_KEY`, e
+  `EMBEDDING_PROVIDER=openai` com `OPENAI_API_KEY` (a Anthropic não tem API de embeddings).
+
+Depois de mudar o `.env`, rode `docker compose up -d --force-recreate api worker`. Se alguma porta estiver ocupada, ajuste `API_PORT`, `WEB_PORT` e
 `VITE_API_URL`.
 
 | Comando | O que faz |
@@ -80,9 +85,9 @@ flowchart LR
     redis --> worker["Worker Celery<br/>extração e análise"]
     repos --> pg[("PostgreSQL 16<br/>+ pgvector")]
     worker --> pg
-    worker --> llm["LLMProvider<br/>Anthropic · OpenAI · fake"]
+    worker --> llm["LLMProvider<br/>Anthropic · OpenAI · Gemini · fake"]
     api --> llm
-    worker --> emb["EmbeddingProvider<br/>OpenAI · fake"]
+    worker --> emb["EmbeddingProvider<br/>OpenAI · Gemini · fake"]
 ```
 
 Como uma análise acontece:
@@ -178,8 +183,9 @@ requisição sem token, e os testes de recurso usam dois usuários para provar o
 
 ### Provedores atrás de interfaces, e testes sem rede
 
-`LLMProvider` e `EmbeddingProvider` são *protocols*, com implementações para Anthropic, OpenAI
-e `fake`. Os provedores `fake` são o padrão no desenvolvimento e nos testes, e o `Settings` os
+`LLMProvider` e `EmbeddingProvider` são *protocols*, com implementações para Anthropic, OpenAI,
+Gemini e `fake`. O Gemini usa o endpoint compatível com OpenAI do Google pelo mesmo SDK
+`openai`, sem biblioteca a mais. Os provedores `fake` são o padrão no desenvolvimento e nos testes, e o `Settings` os
 recusa em produção. Nenhum teste chama API externa, e o retry com backoff tem o `sleep`
 injetável para ser testado.
 

@@ -45,6 +45,29 @@ def test_requires_openai_key() -> None:
         Settings(embedding_provider="openai")
 
 
+def test_requires_gemini_key() -> None:
+    with pytest.raises(ValidationError, match="GEMINI_API_KEY"):
+        Settings(llm_provider="gemini")
+    with pytest.raises(ValidationError, match="GEMINI_API_KEY"):
+        Settings(embedding_provider="gemini")
+
+
+def test_gemini_points_the_openai_sdk_to_google() -> None:
+    settings = Settings(
+        llm_provider="gemini",
+        embedding_provider="gemini",
+        gemini_api_key="gm-teste",  # type: ignore[arg-type]
+    )
+
+    key, base_url = settings.openai_compatible_endpoint("gemini")
+    assert key is not None
+    assert key.get_secret_value() == "gm-teste"
+    assert base_url == "https://generativelanguage.googleapis.com/v1beta/openai/"
+    assert settings.openai_compatible_endpoint("openai") == (None, None)
+    assert settings.llm_model_id == "gemini:gemini-3.8-flash"
+    assert settings.embedding_model_id == "gemini:gemini-embedding-001"
+
+
 def test_requires_anthropic_key() -> None:
     with pytest.raises(ValidationError, match="ANTHROPIC_API_KEY"):
         Settings(llm_provider="anthropic")

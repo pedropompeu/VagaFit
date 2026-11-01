@@ -95,6 +95,38 @@ async def test_openai_provider_orders_by_index_and_batches() -> None:
     assert api.calls[0]["model"] == "text-embedding-3-small"
 
 
+class _NoIndexEmbeddingsAPI:
+    """Como o endpoint compatível do Gemini: ordem da entrada, `index` vazio."""
+
+    def __init__(self, drop_last: bool = False) -> None:
+        self.drop_last = drop_last
+
+    async def create(self, **kwargs: Any) -> Any:
+        count = len(kwargs["input"]) - (1 if self.drop_last else 0)
+        data = [
+            SimpleNamespace(index=None, embedding=[float(i)] * EMBEDDING_DIMENSIONS)
+            for i in range(count)
+        ]
+        return SimpleNamespace(data=data)
+
+
+async def test_missing_index_keeps_response_order() -> None:
+    client = SimpleNamespace(embeddings=_NoIndexEmbeddingsAPI())
+    provider = OpenAIEmbeddingProvider(_settings(), client=client)  # type: ignore[arg-type]
+
+    vectors = await provider.embed(["a", "b", "c"])
+
+    assert [v[0] for v in vectors] == [0.0, 1.0, 2.0]
+
+
+async def test_wrong_vector_count_is_provider_error() -> None:
+    client = SimpleNamespace(embeddings=_NoIndexEmbeddingsAPI(drop_last=True))
+    provider = OpenAIEmbeddingProvider(_settings(), client=client)  # type: ignore[arg-type]
+
+    with pytest.raises(AIProviderError):
+        await provider.embed(["a", "b"])
+
+
 async def test_openai_provider_retries_rate_limit_and_5xx() -> None:
     client, api = _client(
         [
@@ -130,3 +162,14 @@ async def test_openai_provider_does_not_retry_4xx() -> None:
 def test_build_provider() -> None:
     assert isinstance(build_embedding_provider(Settings()), FakeEmbeddingProvider)
     assert isinstance(build_embedding_provider(_settings()), OpenAIEmbeddingProvider)
+
+
+async def test_gemini_embeddings_use_google_endpoint_and_model() -> None:
+    settings = Settings(embedding_provider="gemini", gemini_api_key="gm-teste")  # type: ignore[arg-type]
+
+    provider = build_embedding_provider(settings)
+
+    assert isinstance(provider, OpenAIEmbeddingProvider)
+    assert provider.model == "gemini-embedding-001"
+    assert str(provider._client.base_url) == settings.gemini_base_url
+    await provider.aclose()

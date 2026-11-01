@@ -11,7 +11,7 @@ tokens e duração.
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import anthropic
 import openai
@@ -177,20 +177,33 @@ class AnthropicLLMProvider(_BaseProvider):
 
 
 class OpenAILLMProvider(_BaseProvider):
-    """GPT com `response_format` json_schema estrito. Retry do SDK desligado."""
+    """API de chat da OpenAI com `response_format` json_schema estrito. Retry do SDK desligado.
 
-    def __init__(self, settings: Settings, client: openai.AsyncOpenAI | None = None) -> None:
+    Com `provider="gemini"`, fala com o endpoint compatível com OpenAI do Google.
+    """
+
+    def __init__(
+        self,
+        settings: Settings,
+        client: openai.AsyncOpenAI | None = None,
+        *,
+        provider: Literal["openai", "gemini"] = "openai",
+    ) -> None:
         super().__init__(settings)
         if client is None:
-            if settings.openai_api_key is None:
+            api_key, base_url = settings.openai_compatible_endpoint(provider)
+            if api_key is None:
                 raise AIProviderError("Provedor de LLM sem chave configurada.")
             client = openai.AsyncOpenAI(
-                api_key=settings.openai_api_key.get_secret_value(),
+                api_key=api_key.get_secret_value(),
+                base_url=base_url,
                 max_retries=0,
                 timeout=settings.llm_request_timeout_seconds,
             )
         self._client = client
-        self.model = settings.openai_llm_model
+        self.model = (
+            settings.gemini_llm_model if provider == "gemini" else settings.openai_llm_model
+        )
 
     async def complete_json(self, request: LLMRequest) -> str:
         async def call() -> str:
@@ -232,8 +245,8 @@ class OpenAILLMProvider(_BaseProvider):
 def build_llm_provider(settings: Settings) -> LLMProvider:
     if settings.llm_provider == "anthropic":
         return AnthropicLLMProvider(settings)
-    if settings.llm_provider == "openai":
-        return OpenAILLMProvider(settings)
+    if settings.llm_provider in ("openai", "gemini"):
+        return OpenAILLMProvider(settings, provider=settings.llm_provider)
     from app.ai.fake_llm import FakeLLMProvider
 
     return FakeLLMProvider()

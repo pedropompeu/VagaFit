@@ -43,13 +43,19 @@ class Settings(BaseSettings):
     rate_limit_storage_url: str | None = None
 
     # IA. `fake` é determinístico e não chama API externa: padrão para rodar sem chaves.
-    embedding_provider: Literal["openai", "fake"] = "fake"
-    llm_provider: Literal["anthropic", "openai", "fake"] = "fake"
+    # `gemini` usa o endpoint compatível com OpenAI do Google, pelo mesmo SDK `openai`.
+    embedding_provider: Literal["openai", "gemini", "fake"] = "fake"
+    llm_provider: Literal["anthropic", "openai", "gemini", "fake"] = "fake"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
+    gemini_api_key: SecretStr | None = None
     openai_embedding_model: str = "text-embedding-3-small"
     openai_llm_model: str = "gpt-4.1-mini"
     anthropic_llm_model: str = "claude-opus-5-5"
+    # Versão fixa, não `-latest`: o modelo entra no hash do cache de análise.
+    gemini_llm_model: str = "gemini-3.8-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     llm_max_output_tokens: int = Field(default=16000, gt=0)
     ai_request_timeout_seconds: float = Field(default=60.0, gt=0)
     # LLM com raciocínio pode levar minutos; roda no worker, não na requisição HTTP.
@@ -90,7 +96,17 @@ class Settings(BaseSettings):
             raise ValueError("OPENAI_API_KEY é obrigatória com provedor `openai`.")
         if self.llm_provider == "anthropic" and not self.anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY é obrigatória com LLM_PROVIDER=anthropic.")
+        if "gemini" in (self.embedding_provider, self.llm_provider) and not self.gemini_api_key:
+            raise ValueError("GEMINI_API_KEY é obrigatória com provedor `gemini`.")
         return self
+
+    def openai_compatible_endpoint(
+        self, provider: Literal["openai", "gemini"]
+    ) -> tuple[SecretStr | None, str | None]:
+        """Chave e URL base para o SDK `openai`. `None` na URL é a API da própria OpenAI."""
+        if provider == "gemini":
+            return self.gemini_api_key, self.gemini_base_url
+        return self.openai_api_key, None
 
     @property
     def llm_model_id(self) -> str:
@@ -98,13 +114,18 @@ class Settings(BaseSettings):
         model = {
             "anthropic": self.anthropic_llm_model,
             "openai": self.openai_llm_model,
+            "gemini": self.gemini_llm_model,
             "fake": "fake-llm",
         }[self.llm_provider]
         return f"{self.llm_provider}:{model}"
 
     @property
     def embedding_model_id(self) -> str:
-        model = self.openai_embedding_model if self.embedding_provider == "openai" else "fake"
+        model = {
+            "openai": self.openai_embedding_model,
+            "gemini": self.gemini_embedding_model,
+            "fake": "fake",
+        }[self.embedding_provider]
         return f"{self.embedding_provider}:{model}"
 
     @property

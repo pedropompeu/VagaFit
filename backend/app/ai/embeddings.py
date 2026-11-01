@@ -3,7 +3,7 @@
 import hashlib
 import math
 import re
-from typing import Protocol
+from typing import Literal, Protocol
 
 import openai
 import structlog
@@ -30,18 +30,33 @@ class EmbeddingProvider(Protocol):
 
 
 class OpenAIEmbeddingProvider:
-    def __init__(self, settings: Settings, client: openai.AsyncOpenAI | None = None) -> None:
+    """Embeddings pela API da OpenAI ou, com `provider="gemini"`, pelo endpoint compatível do
+    Google. Os dois aceitam `dimensions`, então o vetor cabe na mesma coluna."""
+
+    def __init__(
+        self,
+        settings: Settings,
+        client: openai.AsyncOpenAI | None = None,
+        *,
+        provider: Literal["openai", "gemini"] = "openai",
+    ) -> None:
         if client is None:
-            if settings.openai_api_key is None:
+            api_key, base_url = settings.openai_compatible_endpoint(provider)
+            if api_key is None:
                 raise AIProviderError("Provedor de embedding sem chave configurada.")
             client = openai.AsyncOpenAI(
-                api_key=settings.openai_api_key.get_secret_value(),
+                api_key=api_key.get_secret_value(),
+                base_url=base_url,
                 max_retries=0,
                 timeout=settings.ai_request_timeout_seconds,
             )
         self._client = client
         self._settings = settings
-        self.model = settings.openai_embedding_model
+        self.model = (
+            settings.gemini_embedding_model
+            if provider == "gemini"
+            else settings.openai_embedding_model
+        )
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         vectors: list[list[float]] = []
@@ -62,8 +77,15 @@ class OpenAIEmbeddingProvider:
                     raise RetryableAIError(f"status {exc.status_code}") from exc
                 logger.error("embedding_request_rejected", status=exc.status_code)
                 raise AIProviderError() from exc
-            ordered = sorted(response.data, key=lambda item: item.index)
-            return [list(item.embedding) for item in ordered]
+            items = list(response.data)
+            # A OpenAI preenche `index`; o endpoint compatível do Gemini pode deixá-lo vazio e
+            # devolve na ordem da entrada. Só reordena quando todos os índices vieram.
+            if all(item.index is not None for item in items):
+                items.sort(key=lambda item: item.index)
+            if len(items) != len(batch):
+                logger.error("embedding_count_mismatch", expected=len(batch), got=len(items))
+                raise AIProviderError()
+            return [list(item.embedding) for item in items]
 
         return await retry_with_backoff(
             call,
@@ -110,6 +132,6 @@ class FakeEmbeddingProvider:
 
 
 def build_embedding_provider(settings: Settings) -> EmbeddingProvider:
-    if settings.embedding_provider == "openai":
-        return OpenAIEmbeddingProvider(settings)
+    if settings.embedding_provider in ("openai", "gemini"):
+        return OpenAIEmbeddingProvider(settings, provider=settings.embedding_provider)
     return FakeEmbeddingProvider()

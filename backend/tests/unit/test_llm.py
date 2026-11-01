@@ -236,3 +236,14 @@ def test_build_llm_provider_by_setting() -> None:
     assert isinstance(build_llm_provider(_settings()), AnthropicLLMProvider)
     assert isinstance(build_llm_provider(_settings(llm_provider="openai")), OpenAILLMProvider)
     assert isinstance(build_llm_provider(Settings(llm_provider="fake")), FakeLLMProvider)
+
+
+async def test_gemini_llm_uses_google_endpoint_and_model() -> None:
+    settings = Settings(llm_provider="gemini", gemini_api_key="gm-teste")  # type: ignore[arg-type]
+
+    provider = build_llm_provider(settings)
+
+    assert isinstance(provider, OpenAILLMProvider)
+    assert provider.model == "gemini-3.8-flash"
+    assert str(provider._client.base_url) == settings.gemini_base_url
+    await provider.aclose()
