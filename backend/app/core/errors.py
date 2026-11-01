@@ -4,6 +4,7 @@
 
 from collections.abc import Mapping
 from http import HTTPStatus
+from types import MappingProxyType
 from typing import Any
 
 import structlog
@@ -32,13 +33,24 @@ class AppError(Exception):
     status_code: int = HTTPStatus.BAD_REQUEST
     code: str = "bad_request"
 
-    def __init__(self, message: str, *, code: str | None = None, status_code: int | None = None):
+    headers: Mapping[str, str] | None = None
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        status_code: int | None = None,
+        headers: Mapping[str, str] | None = None,
+    ):
         super().__init__(message)
         self.message = message
         if code is not None:
             self.code = code
         if status_code is not None:
             self.status_code = status_code
+        if headers is not None:
+            self.headers = headers
 
 
 class NotFoundError(AppError):
@@ -46,7 +58,23 @@ class NotFoundError(AppError):
     code = "not_found"
 
 
-def _error_response(
+class UnauthorizedError(AppError):
+    status_code = HTTPStatus.UNAUTHORIZED
+    code = "unauthorized"
+    headers = MappingProxyType({"WWW-Authenticate": "Bearer"})
+
+
+class ForbiddenError(AppError):
+    status_code = HTTPStatus.FORBIDDEN
+    code = "forbidden"
+
+
+class ConflictError(AppError):
+    status_code = HTTPStatus.CONFLICT
+    code = "conflict"
+
+
+def error_response(
     status_code: int,
     code: str,
     message: str,
@@ -76,14 +104,14 @@ _HTTP_CODES: dict[int, str] = {
 
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)  # noqa: S101 - garantido pelo registro do handler
-    return _error_response(exc.status_code, exc.code, exc.message)
+    return error_response(exc.status_code, exc.code, exc.message, headers=exc.headers)
 
 
 async def http_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, StarletteHTTPException)  # noqa: S101
     code = _HTTP_CODES.get(exc.status_code, "http_error")
     message = exc.detail if isinstance(exc.detail, str) else HTTPStatus(exc.status_code).phrase
-    return _error_response(exc.status_code, code, message, headers=exc.headers)
+    return error_response(exc.status_code, code, message, headers=exc.headers)
 
 
 async def validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
@@ -92,7 +120,7 @@ async def validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
         {"loc": list(err.get("loc", ())), "msg": err.get("msg", ""), "type": err.get("type", "")}
         for err in exc.errors()
     ]
-    return _error_response(
+    return error_response(
         HTTPStatus.UNPROCESSABLE_ENTITY,
         "validation_error",
         "Dados de entrada inválidos.",
@@ -102,7 +130,7 @@ async def validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
 
 async def unhandled_error_handler(_: Request, exc: Exception) -> JSONResponse:
     logger.exception("unhandled_error", error_type=type(exc).__name__)
-    return _error_response(
+    return error_response(
         HTTPStatus.INTERNAL_SERVER_ERROR, "internal_error", "Erro interno inesperado."
     )
 

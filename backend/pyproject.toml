@@ -19,6 +19,9 @@ dependencies = [
     "celery[redis]>=5.4",
     "redis>=5.0",
     "structlog>=24.1",
+    "pyjwt>=2.9",
+    "argon2-cffi>=23.1",
+    "slowapi>=0.1.9",
 ]
 
 [project.optional-dependencies]
@@ -84,6 +87,7 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["app"]
+concurrency = ["greenlet", "thread"]
 
 [tool.coverage.report]
 fail_under = 80
