@@ -8,8 +8,8 @@ BACKEND_DB = $(COMPOSE) run --rm api
 help: ## Lista os comandos
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-10s %s\n", $$1, $$2}'
 
-up: ## Sobe api, worker, db, redis e web
-	$(COMPOSE) up -d --build
+up: ## Sobe api, worker, db, redis e web (renova node_modules do web; o banco fica)
+	$(COMPOSE) up -d --build --renew-anon-volumes
 
 down: ## Derruba os containers (mantém o volume do banco)
 	$(COMPOSE) down
