@@ -55,7 +55,8 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 - Refresh token em cookie httpOnly `Secure` `SameSite=Strict`; access token só em memória
   no front. CORS com origem exata e credenciais.
 - Senha com argon2. Rate limit em login/registro e nos endpoints que chamam LLM.
-- Nunca logar texto de currículo ou vaga: só IDs.
+- Nunca logar texto de currículo ou vaga: só IDs. O processor `redact_sensitive` (structlog) é a
+  rede de segurança; não dependa dele. Métricas novas: sem ID, e-mail ou texto em rótulo.
 - Upload: até 5 MB, limite de páginas, magic number `%PDF`.
 - Segredos só em variável de ambiente. Nunca commitar `.env`, chave ou currículo real.
 
@@ -73,4 +74,4 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 
 0. Setup ✅ · 1. Autenticação ✅ · 2. Currículos ✅ · 3. Vagas ✅ · 4. Worker de análise ✅ ·
 5. Triagem ✅ · 6. Candidaturas ✅ · 7. Frontend (exige `BRAND.md`) · 8. Observabilidade,
-seed e README.
+seed e README (backend ✅; README depois do frontend).

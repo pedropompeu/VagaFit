@@ -33,5 +33,5 @@ lint: ## ruff + mypy no backend, tsc no frontend
 format: ## Formata o backend
 	$(BACKEND) sh -c 'ruff check --fix . && ruff format .'
 
-seed: ## Dados de exemplo fictícios (chega na fase 8)
-	@echo "seed: ainda não implementado (fase 8)."
+seed: ## Conta demo com dados fictícios (ARGS=--reset recria)
+	$(BACKEND_DB) python -m app.seed $(ARGS)

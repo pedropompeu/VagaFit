@@ -23,6 +23,7 @@ from app.ai.llm import LLMOutputError, LLMProvider, structured_call
 from app.ai.prompts import PROMPT_VERSION, analyze_fit_request
 from app.core.config import Settings
 from app.core.errors import NotFoundError
+from app.core.metrics import ANALYSES_REQUESTED
 from app.models.analysis import Analysis
 from app.models.mixins import utcnow
 from app.models.resume import ResumeChunk
@@ -116,11 +117,13 @@ class AnalysisService:
             active_since=utcnow() - stale,
         )
         if existing is not None:
+            ANALYSES_REQUESTED.labels(outcome="reused").inc()
             logger.info("analysis.reused", analysis_id=str(existing.id), status=existing.status)
             return CreatedAnalysis(existing, reused=True)
         analysis = await self._repo.add(resume_id=resume.id, job_id=job.id, input_hash=digest)
         await self._session.commit()
         self._queue.enqueue(RUN_ANALYSIS_TASK, str(analysis.id), str(self._user_id))
+        ANALYSES_REQUESTED.labels(outcome="new").inc()
         logger.info("analysis.requested", analysis_id=str(analysis.id))
         return CreatedAnalysis(analysis, reused=False)
 

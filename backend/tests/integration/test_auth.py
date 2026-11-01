@@ -8,10 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
 from app.core.config import get_settings
+from app.core.metrics import AUTH_LOGIN_FAILURES, AUTH_REFRESH_REUSE_DETECTED
 from app.models.mixins import utcnow
 from app.models.refresh_token import RefreshToken
 from app.services import auth as auth_service
 from tests.integration.conftest import PASSWORD, AuthedUser, register
+from tests.metrics_helpers import counter_value
 
 pytestmark = pytest.mark.integration
 
@@ -115,6 +117,16 @@ async def test_login_errors_are_generic(client: AsyncClient, user_a: AuthedUser)
     assert wrong_password.json()["error"]["code"] == "invalid_credentials"
 
 
+async def test_login_failures_are_counted(client: AsyncClient, user_a: AuthedUser) -> None:
+    before = counter_value(AUTH_LOGIN_FAILURES)
+
+    await client.post(f"{AUTH}/login", json={"email": user_a.email, "password": "senha-errada"})
+    await client.post(f"{AUTH}/login", json={"email": "ninguem@exemplo.com", "password": PASSWORD})
+    await client.post(f"{AUTH}/login", json={"email": user_a.email, "password": PASSWORD})
+
+    assert counter_value(AUTH_LOGIN_FAILURES) - before == 2
+
+
 async def test_login_with_unknown_email_still_verifies_a_hash(
     client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -206,12 +218,14 @@ async def test_reusing_a_rotated_token_revokes_the_whole_family(
     stolen = client.cookies[COOKIE]
     rotated = await _refresh_with(client, stolen)
     current = rotated.cookies[COOKIE]
+    reuse_before = counter_value(AUTH_REFRESH_REUSE_DETECTED)
 
     reuse = await _refresh_with(client, stolen)
     after_reuse = await _refresh_with(client, current)
 
     assert reuse.status_code == 401
     assert after_reuse.status_code == 401, "o token legítimo da família também morre"
+    assert counter_value(AUTH_REFRESH_REUSE_DETECTED) - reuse_before == 1
 
 
 async def test_reuse_in_one_session_does_not_affect_other_sessions(

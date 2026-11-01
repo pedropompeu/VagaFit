@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import ConflictError, ForbiddenError, UnauthorizedError
+from app.core.metrics import AUTH_LOGIN_FAILURES, AUTH_REFRESH_REUSE_DETECTED
 from app.core.security import (
     AccessToken,
     InvalidAccessTokenError,
@@ -72,6 +73,7 @@ class AuthService:
         password_hash = user.password_hash if user is not None else dummy_password_hash()
         valid = await verify_password(password_hash, password)
         if user is None or not valid:
+            AUTH_LOGIN_FAILURES.inc()
             logger.info("auth.login_failed", user_id=str(user.id) if user else None)
             raise UnauthorizedError(INVALID_CREDENTIALS, code="invalid_credentials")
 
@@ -98,6 +100,7 @@ class AuthService:
             if current.replaced_by_id is not None:
                 await self._tokens.revoke_family(current.family_id, now=now)
                 await self._session.commit()
+                AUTH_REFRESH_REUSE_DETECTED.inc()
                 logger.warning(
                     "auth.refresh_reuse_detected",
                     user_id=str(current.user_id),

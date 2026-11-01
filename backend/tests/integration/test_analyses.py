@@ -10,6 +10,7 @@ from app.ai.errors import AIProviderError
 from app.ai.fake_llm import FakeLLMProvider, analyze_fit
 from app.ai.llm import LLMRequest
 from app.core.config import get_settings
+from app.core.metrics import ANALYSES_REQUESTED
 from app.models.mixins import utcnow
 from app.repositories.analyses import AnalysisRepository
 from app.repositories.resumes import ResumeRepository
@@ -21,6 +22,7 @@ from app.services.analysis import (
 )
 from app.worker.queue import RUN_ANALYSIS_TASK, InMemoryTaskQueue
 from tests.integration.conftest import AuthedUser
+from tests.metrics_helpers import counter_value
 
 pytestmark = pytest.mark.integration
 
@@ -122,6 +124,10 @@ async def test_runner_produces_literal_evidence_from_this_resume(
         assert s["original"] in contents[uuid.UUID(s["chunk_id"])]
 
 
+def _requested(outcome: str) -> float:
+    return counter_value(ANALYSES_REQUESTED, outcome=outcome)
+
+
 async def test_same_input_reuses_done_analysis(
     client: AsyncClient, user_a: AuthedUser, db_session: AsyncSession, task_queue: InMemoryTaskQueue
 ) -> None:
@@ -129,6 +135,7 @@ async def test_same_input_reuses_done_analysis(
     first = (await _request(client, user_a, resume_id, job_id)).json()
     await _runner(db_session, user_a, FakeLLMProvider()).run(uuid.UUID(first["id"]))
     sent_before = len(task_queue.sent)
+    reused_before = _requested("reused")
 
     again = (await _request(client, user_a, resume_id, job_id)).json()
 
@@ -136,6 +143,7 @@ async def test_same_input_reuses_done_analysis(
     assert again["reused"] is True
     assert again["status"] == "done"
     assert len(task_queue.sent) == sent_before
+    assert _requested("reused") - reused_before == 1
 
 
 async def test_pending_is_reused_until_stale(

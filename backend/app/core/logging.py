@@ -1,6 +1,7 @@
 """Logs estruturados com structlog e request_id por requisição.
 
-Regra: nunca logar texto de currículo ou de vaga — só IDs.
+Regra: nunca logar texto de currículo ou de vaga, nem e-mail, senha ou token. Só IDs.
+O código já segue a regra; `redact_sensitive` é a rede de segurança caso alguém esqueça.
 """
 
 import logging
@@ -13,6 +14,54 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.core.config import Settings
 
 REQUEST_ID_HEADER = "X-Request-ID"
+
+REDACTED = "[removido]"
+# Campos que carregam texto de currículo, de vaga, de triagem ou credenciais.
+SENSITIVE_KEYS = frozenset(
+    {
+        "text",
+        "raw_text",
+        "content",
+        "resume_text",
+        "job_text",
+        "quote",
+        "evidence",
+        "evidence_quote",
+        "original",
+        "suggestion",
+        "question",
+        "questions",
+        "answer",
+        "prompt",
+        "system",
+        "messages",
+        "email",
+        "password",
+        "token",
+        "access_token",
+        "refresh_token",
+        "authorization",
+        "cookie",
+    }
+)
+# Qualquer outro valor de texto mais longo que isto é tratado como conteúdo, não como ID.
+MAX_FIELD_CHARS = 200
+# Campos de controle do próprio log: nunca mexer.
+_PASSTHROUGH_KEYS = frozenset({"event", "level", "timestamp", "request_id", "exception"})
+
+
+def redact_sensitive(
+    _logger: object, _method: str, event_dict: structlog.types.EventDict
+) -> structlog.types.EventDict:
+    """Processor do structlog: troca campos sensíveis e textos longos por um marcador."""
+    for key, value in list(event_dict.items()):
+        if key in _PASSTHROUGH_KEYS:
+            continue
+        if key.lower() in SENSITIVE_KEYS:
+            event_dict[key] = REDACTED
+        elif isinstance(value, str) and len(value) > MAX_FIELD_CHARS:
+            event_dict[key] = f"{REDACTED} ({len(value)} caracteres)"
+    return event_dict
 
 
 def configure_logging(settings: Settings) -> None:
@@ -28,6 +77,7 @@ def configure_logging(settings: Settings) -> None:
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             structlog.processors.format_exc_info,
+            redact_sensitive,
             renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),

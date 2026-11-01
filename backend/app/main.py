@@ -14,6 +14,7 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.logging import REQUEST_ID_HEADER, RequestIdMiddleware, configure_logging
+from app.core.metrics import instrument
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.db.session import engine
 
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     app.include_router(health_router)
+    instrument(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     return app
 
