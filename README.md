@@ -63,7 +63,8 @@ Depois de mudar o `.env`, rode `docker compose up -d --force-recreate api worker
 | `make up` / `make down` | Sobe e derruba os containers. O volume do banco é mantido. |
 | `make migrate` | Aplica as migrações do Alembic. |
 | `make seed` | Cria a conta demo (`make seed ARGS=--reset` recria). |
-| `make test` | Roda os testes do backend num banco separado, com cobertura mínima de 80%. |
+| `make test` | Roda os testes do backend num banco separado, com cobertura mínima de 80%, e depois os do front. |
+| `make test-web` | Roda só os testes do front (Vitest). |
 | `make test-unit` | Roda só os testes que não precisam de banco. |
 | `make lint` | Roda ruff, mypy strict e o typecheck do front. |
 | `make logs` | Acompanha os logs da api e do worker. |
@@ -228,15 +229,19 @@ completo fica em `/docs`.
   ponta a ponta, isolamento entre dois usuários, a regra de honestidade (citação inventada,
   alias não enviado e veredito sem evidência), o cache, as falhas de IA, o rate limit, a
   redação de log e as métricas.
+- **Frontend:** Vitest + Testing Library em jsdom. Cobrem a renovação do token (um refresh
+  só para vários 401 e fim da sessão quando ele falha), os guards de rota, o login, a lista
+  de evidências e os formatadores. Sem rede: o cliente HTTP usa um adapter de mentira.
 - **Lint:** ruff (lint e format), mypy `--strict` e `tsc` no front, também no pre-commit.
 - **CI:** a cada push, o GitHub Actions roda no backend lint, mypy, migrações e testes com
-  Postgres + pgvector, e no front o typecheck e o build.
+  Postgres + pgvector, e no front o typecheck, os testes e o build.
 
 ## Roadmap
 
 - [ ] Identidade visual própria (hoje os tokens de cor e espaçamento são provisórios).
 - [ ] GIF da demo e deploy público com cota diária por conta.
-- [ ] Testes de componente e e2e no front.
+- [x] Testes de componente no front (Vitest).
+- [ ] Testes e2e no front.
 - [ ] Métricas do worker (exporter próprio) e `/metrics` protegido na rede interna.
 - [ ] Ler a vaga a partir de uma URL e extensão de navegador.
 - [ ] Recuperação de senha e verificação de e-mail.

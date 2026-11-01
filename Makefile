@@ -3,7 +3,7 @@ TEST_DB_URL = postgresql+asyncpg://$${POSTGRES_USER:-vagafit}:$${POSTGRES_PASSWO
 BACKEND = $(COMPOSE) run --rm --no-deps api
 BACKEND_DB = $(COMPOSE) run --rm api
 
-.PHONY: help up down logs migrate test test-unit lint format seed
+.PHONY: help up down logs migrate test test-web test-unit lint format seed
 
 help: ## Lista os comandos
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -20,8 +20,12 @@ logs: ## Acompanha os logs
 migrate: ## Aplica as migrações no banco de desenvolvimento
 	$(BACKEND_DB) alembic upgrade head
 
-test: ## Testes do backend (com banco de teste e cobertura mínima de 80%)
+test: ## Testes do backend (banco de teste, cobertura mínima de 80%) e do frontend
 	$(BACKEND_DB) sh -c 'export DATABASE_URL="$(TEST_DB_URL)" && alembic upgrade head && pytest'
+	$(COMPOSE) run --rm --no-deps web npm test
+
+test-web: ## Só os testes do frontend (Vitest)
+	$(COMPOSE) run --rm --no-deps web npm test
 
 test-unit: ## Só testes que não precisam de banco
 	$(BACKEND) pytest -m "not integration" --no-cov
