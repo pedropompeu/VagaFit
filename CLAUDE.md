@@ -73,5 +73,5 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 ## Fases
 
 0. Setup ✅ · 1. Autenticação ✅ · 2. Currículos ✅ · 3. Vagas ✅ · 4. Worker de análise ✅ ·
-5. Triagem ✅ · 6. Candidaturas ✅ · 7. Frontend (exige `BRAND.md`) · 8. Observabilidade,
-seed e README (backend ✅; README depois do frontend).
+5. Triagem ✅ · 6. Candidaturas ✅ · 7. Frontend ✅ (tokens visuais provisórios até o `BRAND.md`) ·
+8. Observabilidade, seed e README ✅.
