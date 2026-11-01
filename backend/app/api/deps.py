@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.db.session import get_session
 from app.models.user import User
+from app.services.analysis import AnalysisService
 from app.services.auth import AuthService
 from app.services.jobs import JobService
 from app.services.resumes import ResumeService
@@ -88,3 +89,12 @@ def get_job_service(session: SessionDep, user: CurrentUserDep, queue: QueueDep) 
 
 
 JobServiceDep = Annotated[JobService, Depends(get_job_service)]
+
+
+def get_analysis_service(
+    session: SessionDep, user: CurrentUserDep, settings: SettingsDep, queue: QueueDep
+) -> AnalysisService:
+    return AnalysisService(session, user.id, settings, queue)
+
+
+AnalysisServiceDep = Annotated[AnalysisService, Depends(get_analysis_service)]

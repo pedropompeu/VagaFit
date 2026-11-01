@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     resume_max_text_chars: int = Field(default=50_000, gt=0)
     pdf_extraction_timeout_seconds: float = Field(default=10.0, gt=0)
 
+    # Análises
+    analysis_top_k_chunks: int = Field(default=3, ge=1, le=10)
+    # Análise `pending`/`running` mais velha que isto não é reaproveitada (worker caiu).
+    analysis_stale_after_minutes: int = Field(default=15, gt=0)
+
     @model_validator(mode="after")
     def _check_jwt_secret(self) -> "Settings":
         secret = self.jwt_secret.get_secret_value()
@@ -86,6 +91,21 @@ class Settings(BaseSettings):
         if self.llm_provider == "anthropic" and not self.anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY é obrigatória com LLM_PROVIDER=anthropic.")
         return self
+
+    @property
+    def llm_model_id(self) -> str:
+        """Provedor + modelo do LLM. Entra no hash do cache de análise."""
+        model = {
+            "anthropic": self.anthropic_llm_model,
+            "openai": self.openai_llm_model,
+            "fake": "fake-llm",
+        }[self.llm_provider]
+        return f"{self.llm_provider}:{model}"
+
+    @property
+    def embedding_model_id(self) -> str:
+        model = self.openai_embedding_model if self.embedding_provider == "openai" else "fake"
+        return f"{self.embedding_provider}:{model}"
 
     @property
     def refresh_cookie_path(self) -> str:

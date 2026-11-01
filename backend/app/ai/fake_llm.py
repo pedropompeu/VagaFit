@@ -126,7 +126,102 @@ def extract_requirements(request: LLMRequest) -> dict[str, Any]:
     }
 
 
-DEFAULT_HANDLERS: dict[str, Handler] = {"extract_requirements": extract_requirements}
+_STOPWORDS = frozenset(
+    {
+        "anos",
+        "experiencia",
+        "conhecimento",
+        "conhecimentos",
+        "com",
+        "para",
+        "sobre",
+        "em",
+        "de",
+        "do",
+        "da",
+        "dos",
+        "das",
+        "e",
+        "ou",
+        "um",
+        "uma",
+        "boa",
+        "bom",
+        "pratica",
+        "solida",
+        "avancado",
+        "desejavel",
+        "dominio",
+        "uso",
+        "nivel",
+    }
+)
+
+
+def _keywords(text: str) -> list[str]:
+    tech = [_key(t) for t in _find_tech(text)]
+    if tech:
+        return tech
+    words = re.findall(r"[\w+#./-]+", _key(text))
+    return [w for w in words if len(w) >= 3 and w not in _STOPWORDS][:4]
+
+
+def _hits(keywords: list[str], line: str) -> int:
+    key = _key(line)
+    return sum(1 for k in keywords if re.search(rf"(?<![\w.]){re.escape(k)}(?![\w])", key))
+
+
+def analyze_fit(request: LLMRequest) -> dict[str, Any]:
+    """Veredito por casamento de palavras-chave: todas na mesma linha = met; parte = partial.
+
+    A citação é a própria linha do trecho, então sempre passa na validação literal.
+    """
+    chunks: dict[str, str] = request.payload["chunks"]
+    verdicts: list[dict[str, Any]] = []
+    suggestions: list[dict[str, str]] = []
+    for req in request.payload["requirements"]:
+        keywords = _keywords(req["text"])
+        best: tuple[int, str, str] | None = None
+        for alias in req["candidates"]:
+            for line in chunks[alias].split("\n"):
+                hits = _hits(keywords, line) if keywords else 0
+                if hits and (best is None or hits > best[0]):
+                    best = (hits, alias, line.strip())
+        if best is None:
+            verdicts.append(
+                {
+                    "requirement_id": req["id"],
+                    "verdict": "not_met",
+                    "evidence": [],
+                    "rationale": "Nenhum trecho recebido menciona o requisito.",
+                }
+            )
+            continue
+        hits, alias, line = best
+        verdict = "met" if hits == len(keywords) else "partial"
+        verdicts.append(
+            {
+                "requirement_id": req["id"],
+                "verdict": verdict,
+                "evidence": [{"chunk": alias, "quote": line}],
+                "rationale": "O trecho citado menciona o requisito.",
+            }
+        )
+        if verdict == "met" and len(suggestions) < 2:
+            suggestions.append(
+                {
+                    "chunk": alias,
+                    "original": line,
+                    "suggestion": f"Leve para o início do bloco: {line.lstrip('-•* ')}",
+                }
+            )
+    return {"verdicts": verdicts, "suggestions": suggestions}
+
+
+DEFAULT_HANDLERS: dict[str, Handler] = {
+    "extract_requirements": extract_requirements,
+    "analyze_fit": analyze_fit,
+}
 
 
 class FakeLLMProvider:
