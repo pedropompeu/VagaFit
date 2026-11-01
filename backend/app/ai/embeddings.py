@@ -26,6 +26,8 @@ class EmbeddingProvider(Protocol):
         """Um vetor de `EMBEDDING_DIMENSIONS` posições por texto, na mesma ordem."""
         ...
 
+    async def aclose(self) -> None: ...
+
 
 class OpenAIEmbeddingProvider:
     def __init__(self, settings: Settings, client: openai.AsyncOpenAI | None = None) -> None:
@@ -71,6 +73,9 @@ class OpenAIEmbeddingProvider:
             max_delay=self._settings.ai_backoff_max_seconds,
         )
 
+    async def aclose(self) -> None:
+        await self._client.close()
+
 
 _WORD = re.compile(r"\w+")
 
@@ -86,6 +91,9 @@ class FakeEmbeddingProvider:
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         return [self.vector(text) for text in texts]
+
+    async def aclose(self) -> None:
+        return None
 
     @staticmethod
     def vector(text: str) -> list[float]:

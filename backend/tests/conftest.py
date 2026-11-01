@@ -14,8 +14,10 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from app.api.deps import get_task_queue
 from app.core.rate_limit import limiter
 from app.main import create_app
+from app.worker.queue import InMemoryTaskQueue
 
 
 @pytest.fixture(autouse=True)
@@ -34,8 +36,16 @@ def rate_limited() -> None:
 
 
 @pytest.fixture
-def app() -> FastAPI:
-    return create_app()
+def task_queue() -> InMemoryTaskQueue:
+    """Fila em memória: o teste confere o que seria enfileirado sem Redis nem worker."""
+    return InMemoryTaskQueue()
+
+
+@pytest.fixture
+def app(task_queue: InMemoryTaskQueue) -> FastAPI:
+    application = create_app()
+    application.dependency_overrides[get_task_queue] = lambda: task_queue
+    return application
 
 
 @pytest.fixture

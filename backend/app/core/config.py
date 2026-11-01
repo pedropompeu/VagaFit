@@ -50,8 +50,10 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     openai_llm_model: str = "gpt-4.1-mini"
     anthropic_llm_model: str = "claude-opus-5-5"
-    llm_max_output_tokens: int = Field(default=8000, gt=0)
+    llm_max_output_tokens: int = Field(default=16000, gt=0)
     ai_request_timeout_seconds: float = Field(default=60.0, gt=0)
+    # LLM com raciocínio pode levar minutos; roda no worker, não na requisição HTTP.
+    llm_request_timeout_seconds: float = Field(default=300.0, gt=0)
     # Backoff exponencial em rate limit e falha transitória do provedor.
     ai_max_attempts: int = Field(default=5, ge=1)
     ai_backoff_base_seconds: float = Field(default=1.0, ge=0)

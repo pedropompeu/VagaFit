@@ -14,7 +14,9 @@ from app.core.errors import UnauthorizedError
 from app.db.session import get_session
 from app.models.user import User
 from app.services.auth import AuthService
+from app.services.jobs import JobService
 from app.services.resumes import ResumeService
+from app.worker.queue import CeleryTaskQueue, TaskQueue
 
 
 class PingableCache(Protocol):
@@ -71,3 +73,18 @@ def get_resume_service(
 
 
 ResumeServiceDep = Annotated[ResumeService, Depends(get_resume_service)]
+
+
+def get_task_queue() -> TaskQueue:
+    """Fila do Celery. Testes sobrescrevem com `InMemoryTaskQueue` (o CI não tem Redis)."""
+    return CeleryTaskQueue()
+
+
+QueueDep = Annotated[TaskQueue, Depends(get_task_queue)]
+
+
+def get_job_service(session: SessionDep, user: CurrentUserDep, queue: QueueDep) -> JobService:
+    return JobService(session, user.id, queue)
+
+
+JobServiceDep = Annotated[JobService, Depends(get_job_service)]
