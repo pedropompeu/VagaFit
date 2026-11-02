@@ -18,7 +18,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import EmbeddingProvider
-from app.ai.errors import AIProviderError
+from app.ai.errors import AIProviderError, AIQuotaExceededError
 from app.ai.llm import LLMOutputError, LLMProvider, structured_call
 from app.ai.prompts import PROMPT_VERSION, analyze_fit_request
 from app.core.config import Settings
@@ -52,6 +52,10 @@ logger = structlog.get_logger(__name__)
 
 ANALYSIS_NOT_FOUND = "Análise não encontrada."
 MSG_AI_UNAVAILABLE = "O serviço de IA está indisponível. Tente de novo em alguns minutos."
+MSG_AI_QUOTA = (
+    "A cota de IA acabou. Tentar de novo agora repete o erro. "
+    "A análise volta a funcionar quando a cota renovar."
+)
 MSG_INVALID_OUTPUT = (
     "A IA devolveu uma resposta que não passou na validação de evidências duas vezes. "
     "Tente de novo."
@@ -297,6 +301,8 @@ class AnalysisRunner:
         log = logger.bind(analysis_id=str(analysis_id))
         try:
             result = await self._analyze(analysis)
+        except AIQuotaExceededError:
+            return await self._fail(analysis_id, MSG_AI_QUOTA, "ai_quota_exceeded")
         except AIProviderError:
             return await self._fail(analysis_id, MSG_AI_UNAVAILABLE, "ai_unavailable")
         except LLMOutputError as exc:

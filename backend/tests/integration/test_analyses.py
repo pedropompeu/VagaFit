@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import FakeEmbeddingProvider
-from app.ai.errors import AIProviderError
+from app.ai.errors import AIProviderError, AIQuotaExceededError
 from app.ai.fake_llm import FakeLLMProvider, analyze_fit
 from app.ai.llm import LLMRequest
 from app.core.config import get_settings
@@ -15,6 +15,7 @@ from app.models.mixins import utcnow
 from app.repositories.analyses import AnalysisRepository
 from app.repositories.resumes import ResumeRepository
 from app.services.analysis import (
+    MSG_AI_QUOTA,
     MSG_AI_UNAVAILABLE,
     MSG_INTERNAL,
     MSG_INVALID_OUTPUT,
@@ -161,6 +162,23 @@ async def test_pending_is_reused_until_stale(
     again = (await _request(client, user_a, resume_id, job_id)).json()
     assert again["id"] != first["id"]
     assert again["reused"] is False
+
+
+async def test_quota_exhausted_shows_quota_message(
+    client: AsyncClient, user_a: AuthedUser, db_session: AsyncSession
+) -> None:
+    resume_id, job_id = await _setup(client, user_a)
+    first = (await _request(client, user_a, resume_id, job_id)).json()
+
+    def no_quota(request: LLMRequest) -> dict:
+        raise AIQuotaExceededError("cota esgotada")
+
+    llm = FakeLLMProvider(handlers={"analyze_fit": no_quota})
+    assert await _runner(db_session, user_a, llm).run(uuid.UUID(first["id"])) == "failed"
+
+    detail = (await client.get(f"/api/v1/analyses/{first['id']}", headers=user_a.headers)).json()
+    assert detail["error"] == MSG_AI_QUOTA
+    assert detail["result"] is None
 
 
 async def test_failed_analysis_is_not_reused(
