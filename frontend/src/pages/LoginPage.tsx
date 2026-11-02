@@ -18,7 +18,7 @@ interface LoginLocationState {
 export function LoginPage() {
   usePageTitle("Entrar");
 
-  const { login } = useAuth();
+  const { login, sessionExpired } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const state = (location.state as LoginLocationState | null) ?? {};
@@ -53,6 +53,10 @@ export function LoginPage() {
       {notice ? (
         <div className="mb-md">
           <Alert variant="success">{notice}</Alert>
+        </div>
+      ) : sessionExpired ? (
+        <div className="mb-md">
+          <Alert variant="info">Sua sessão expirou. Entre de novo para continuar.</Alert>
         </div>
       ) : null}
 

@@ -165,6 +165,12 @@ export function NewResumePage() {
       >
         {actionError ? <Alert variant="error">{actionError}</Alert> : null}
 
+        <Alert variant="info" title="O que acontece com o seu currículo">
+          O VagaFit guarda o título, o texto e os trechos do currículo; o arquivo PDF não fica salvo.
+          Para dividir e analisar, o texto é enviado a um provedor de IA externo. Apagar a conta
+          remove currículos, vagas, análises e candidaturas.
+        </Alert>
+
         <Card className="flex flex-col gap-md p-lg">
           <Field
             label="Título"

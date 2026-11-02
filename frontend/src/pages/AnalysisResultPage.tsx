@@ -42,7 +42,7 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
       <div className="flex flex-col gap-xs sm:max-w-[16rem]">
         <ScoreBadge score={result.score} size="lg" showLabel />
         <p className="text-caption text-muted">
-          Resume quantos requisitos desta vaga o currículo comprova. Não avalia você.
+          Resume o quanto o currículo comprova os requisitos desta vaga. Obrigatórios pesam mais. Não avalia você.
         </p>
       </div>
       <dl className="grid flex-1 gap-sm sm:grid-cols-2">

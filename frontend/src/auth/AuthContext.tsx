@@ -18,6 +18,8 @@ export type AuthStatus = "loading" | "authenticated" | "anonymous";
 interface AuthContextValue {
   user: User | null;
   status: AuthStatus;
+  /** Verdadeiro quando a sessão caiu sozinha (refresh recusado), não por logout. */
+  sessionExpired: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSessionExpiredHandler(() => {
       setUser(null);
       setStatus("anonymous");
+      setSessionExpired(true);
       queryClient.clear();
     });
     return () => {
@@ -75,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(session.access_token);
       setUser(session.user);
       setStatus("authenticated");
+      setSessionExpired(false);
       queryClient.clear();
     },
     [queryClient],
@@ -118,8 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, status, login, register, logout, deleteAccount }),
-    [user, status, login, register, logout, deleteAccount],
+    () => ({ user, status, sessionExpired, login, register, logout, deleteAccount }),
+    [user, status, sessionExpired, login, register, logout, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

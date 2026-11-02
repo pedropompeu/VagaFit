@@ -9,7 +9,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LoginPage } from "./LoginPage";
 
 const login = vi.fn<(email: string, password: string) => Promise<void>>();
-vi.mock("../auth/AuthContext", () => ({ useAuth: () => ({ login }) }));
+let sessionExpired = false;
+vi.mock("../auth/AuthContext", () => ({ useAuth: () => ({ login, sessionExpired }) }));
 
 function renderLogin(state?: unknown) {
   return render(
@@ -33,6 +34,7 @@ async function fillAndSubmit(email: string, password: string) {
 describe("LoginPage", () => {
   beforeEach(() => {
     login.mockReset();
+    sessionExpired = false;
   });
 
   it("entra com o e-mail sem espaços e vai para os currículos", async () => {
@@ -69,6 +71,17 @@ describe("LoginPage", () => {
 
     expect(await screen.findByText("E-mail ou senha incorretos.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Entrar" })).toBeTruthy();
+  });
+
+  it("explica que a sessão expirou quando ela caiu sozinha", () => {
+    sessionExpired = true;
+    renderLogin();
+    expect(screen.getByText("Sua sessão expirou. Entre de novo para continuar.")).toBeTruthy();
+  });
+
+  it("não fala de sessão expirada num acesso normal", () => {
+    renderLogin();
+    expect(screen.queryByText(/sessão expirou/)).toBeNull();
   });
 
   it("mostra o aviso que veio de outra tela", () => {

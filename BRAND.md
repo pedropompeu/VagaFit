@@ -1,5 +1,5 @@
 # VagaFit — Brand Identity System
-> Versão 1.2 · 2026-11-01 · Status: Review (pendências na seção 14.4)
+> Versão 1.3 · 2026-11-02 · Status: Review (pendências na seção 14.4)
 
 Conceito de marca: **Laudo**. Tagline: **Cada ponto, com prova.** Linha de apoio: **Sem prova, é lacuna.**
 
@@ -894,13 +894,16 @@ Convenções completas em 12.8. Aqui, o par "ruim → bom" dos casos principais.
 | IA indisponível | O provedor de IA não respondeu. Nada foi salvo. Tente de novo em alguns minutos. |
 | IA citou o que não existe | A resposta da IA citou trechos que não estão no currículo e foi descartada duas vezes. Nenhuma análise foi gerada. Tente de novo. |
 | PDF ilegível | Não foi possível extrair texto deste PDF. Ele pode estar protegido por senha ou corrompido. Cole o texto do currículo no lugar. |
+| PDF escaneado (sem texto selecionável) | O PDF não tem texto selecionável (talvez seja escaneado). Cole o texto do currículo. `(e)` `backend/app/services/pdf.py`, 2026-11-02 |
+| Sessão expirada (tela de login) | Sua sessão expirou. Entre de novo para continuar. `(d)` 2026-11-02; só quando o refresh falha, nunca no logout |
+| Aviso ao adicionar currículo (LGPD) | O VagaFit guarda o título, o texto e os trechos do currículo; o arquivo PDF não fica salvo. Para dividir e analisar, o texto é enviado a um provedor de IA externo. Apagar a conta remove currículos, vagas, análises e candidaturas. `(d)` 2026-11-02 |
 | PDF acima do limite | O arquivo tem 7,2 MB e o limite é 5 MB. |
 
 **Loading:** "Comparando o currículo com cada requisito. A página atualiza sozinha." · "Extraindo os requisitos da vaga…" · "Escrevendo os rascunhos a partir do seu currículo. Pode levar alguns segundos." · "Carregando currículos…" (reticências com o caractere único **…**).
 
 **Sucesso:** "Currículo salvo. 12 trechos prontos para citação." · "Vaga lida. 9 requisitos extraídos: 6 obrigatórios e 3 diferenciais." · "Análise concluída. 3 lacunas em 8 requisitos." · "2 rascunhos prontos. 1 precisa da sua resposta." · "Candidatura registrada em Enviada." · "Conta apagada. Currículos, vagas e análises foram removidos."
 
-**Score:** rótulo **Score de aderência**; número **72/100** (mono, badge neutro); apoio: "Resume quantos requisitos desta vaga o currículo comprova. Não avalia você." Barras: "Obrigatórios: 4 de 6 com evidência." · "Diferenciais: a vaga não lista."
+**Score:** rótulo **Score de aderência**; número **72/100** (mono, badge neutro); apoio: "Resume o quanto o currículo comprova os requisitos desta vaga. Obrigatórios pesam mais. Não avalia você." (`(d)` 2026-11-02; a frase anterior, "Resume quantos requisitos desta vaga o currículo comprova. Não avalia você.", fica `~superseded 2026-11-02`, porque o score pondera obrigatórios 70% × diferenciais 30% e "Atende em parte" vale metade) Barras: "Obrigatórios: 4 de 6 com evidência." · "Diferenciais: a vaga não lista."
 
 **Evidência:** título "Evidência no currículo (2)" (forma única); citação entre “aspas curvas” com legenda *Currículo · trecho 3*; link "Ver trecho 3 completo"; sem citação: "Nenhum trecho do currículo comprova este item."; avisos "Só reformulam o que já está no currículo. Nenhum fato novo entra." e "As respostas são rascunhos baseados só no seu currículo: revise antes de enviar."
 
@@ -926,14 +929,14 @@ Mapa de vocabulário de código para tela: `met` Atende · `partial` Atende em p
 
 ### 12.9 Restrições e limites (seção 12 do brief)
 
-> Proposta `(i)` da ECHO. Os itens marcados com [confirmar] dependem de confirmar o comportamento real no código e de validação de Pedro Pompeu (ver 14.4).
+> Proposta `(i)` da ECHO `~superseded 2026-11-02`: **aprovada por Pedro Pompeu `(d)` em 2026-11-02**, inteira. Os antigos [confirmar] foram resolvidos assim: claims de privacidade só os confirmados no código (o aviso de LGPD da seção 12.7); provedor de IA externo informado na tela de novo currículo; aviso de demo com cota fica para quando houver deploy público.
 
 - **Idioma e registro.** Toda a copy do produto, do README e do social preview em pt-BR com acentuação completa. Mensagens técnicas do OpenAPI/Swagger podem ficar em inglês; rótulos de interface nunca. Registro de dev para dev, em "você", nunca institucional.
 - **Palavras e promessas proibidas.** "garantido", "match perfeito" (brief) e a família listada em 12.4. Nenhuma frase prevê o resultado de uma candidatura.
-- **Limites de afirmação.** O VagaFit avalia o **currículo**, não a pessoa. "Evidência verificada" significa que a **citação existe no trecho do currículo** (cópia literal); não significa que a interpretação da IA esteja correta. "Atende" só aparece com citação ao lado. Sugestões e rascunhos usam só fatos do currículo; qualquer ação de correção começa com "se você tem essa experiência". Todo texto de IA é rotulado **rascunho**. O score é um resumo, não uma nota. Claims de privacidade só entram se confirmados no código [confirmar].
-- **Honestidade de portfólio.** O README e a demo dizem que é projeto de portfólio com demo pública e cota de IA limitada, antes de a cota esgotar [confirmar]. Sem números de usuários ou empresas inexistentes. Métricas só de teste e engenharia. Sem comparação nominal com produtos de terceiros.
+- **Limites de afirmação.** O VagaFit avalia o **currículo**, não a pessoa. "Evidência verificada" significa que a **citação existe no trecho do currículo** (cópia literal); não significa que a interpretação da IA esteja correta. "Atende" só aparece com citação ao lado. Sugestões e rascunhos usam só fatos do currículo; qualquer ação de correção começa com "se você tem essa experiência". Todo texto de IA é rotulado **rascunho**. O score é um resumo, não uma nota. Claims de privacidade só entram se confirmados no código.
+- **Honestidade de portfólio.** O README e a demo dizem que é projeto de portfólio com demo pública e cota de IA limitada, antes de a cota esgotar (vale a partir do deploy público). Sem números de usuários ou empresas inexistentes. Métricas só de teste e engenharia. Sem comparação nominal com produtos de terceiros.
 - **Limites de marca.** Sem emoji, confete, troféu, estrela, foguete, alvo, aperto de mão; sem selo ou carimbo ("Aprovado", "Certificado", "Verificado" como carimbo). Âmbar é exclusivo da evidência. Status nunca depende só de cor.
-- **Dados e LGPD.** Onde coleta currículo, o texto diz o que é guardado e que apagar conta remove currículos, vagas e dados vinculados. Currículo é dado pessoal: exemplos públicos usam currículo fictício, marcado como tal. Informar que o conteúdo é enviado a um provedor de IA externo [confirmar].
+- **Dados e LGPD.** Onde coleta currículo, o texto diz o que é guardado e que apagar conta remove currículos, vagas e dados vinculados. Currículo é dado pessoal: exemplos públicos usam currículo fictício, marcado como tal. Informar que o conteúdo é enviado a um provedor de IA externo.
 - **Acessibilidade da linguagem.** Frases curtas; `aria-label` acompanha o rótulo visível ("Score de aderência: 72 de 100"); datas e números em pt-BR.
 
 Veja também: 03 (vereditos), 08 (rótulos nos componentes), 13 (exemplos).
@@ -1074,6 +1077,12 @@ Veja também: 08, 12, 14.
 | 2026-11-01 | (i) | Três ícones próprios no estilo Heroicons: sem evidência, citação, grifo |
 | 2026-11-01 | (i) | `--color-brand` = petróleo-600; tons derivados do escuro aceitos; ID do trecho = "Currículo · trecho N" |
 | 2026-11-01 | (d) | Tema claro é o oficial: `data-theme="light"` fixo; escuro só por escolha explícita futura |
+| 2026-11-02 | (d) | Frase de apoio do score explicita o peso dos obrigatórios (resolve a ambiguidade 2 da ECHO) |
+| 2026-11-02 | (e) | PDF sem texto selecionável é recusado com mensagem própria (resolve a ambiguidade 5) |
+| 2026-11-02 | (d) | Aviso "Sua sessão expirou" na tela de login quando o refresh falha (resolve a ambiguidade 6) |
+| 2026-11-02 | (e) | A mensagem do backend (`error.message`) tem prioridade sobre a do front; a copy do backend segue esta seção (resolve a ambiguidade 7) |
+| 2026-11-02 | (d) | Aviso de LGPD e de provedor de IA externo na tela de novo currículo; nenhum outro claim de privacidade (resolve as ambiguidades 8 e 9) |
+| 2026-11-02 | (d) | Seção 12.9 aprovada inteira |
 
 **Pendente de aprovação de Pedro Pompeu `(d)`**
 
@@ -1081,13 +1090,13 @@ Veja também: 08, 12, 14.
 |---|---|
 | `lucide-react` como dependência | `~superseded 2026-11-01`: resolvido, Heroicons `(d)` |
 | Busca de anterioridade da marca no INPI (símbolo e nome) | Aberto; antes de registro ou uso comercial |
-| ECHO, ambiguidade 2: fórmula do score (a frase de apoio assume que o score resume requisitos com evidência) | Aberto; confirmar contra a fórmula real |
+| ECHO, ambiguidade 2: fórmula do score (a frase de apoio assume que o score resume requisitos com evidência) | `~superseded 2026-11-02`: resolvido, frase nova `(d)` |
 | ECHO, ambiguidade 3: "Apagar" × "Excluir" (recomendação: manter **Apagar**) | `~superseded 2026-11-01`: resolvido, **Apagar** `(d)` |
 | ECHO, ambiguidade 4: "Analisar vaga" × "Criar análise" no botão | `~superseded 2026-11-01`: resolvido, **Analisar vaga** `(d)` |
-| ECHO, ambiguidade 5: PDF só-imagem de fato falha? (a causa foi retirada do texto da seção 12.7 até confirmar) | Aberto |
-| ECHO, ambiguidade 6: aviso de sessão expirada na tela de login | Aberto |
-| ECHO, ambiguidades 7 a 9: mensagem do backend sobrescreve a do front; claims de privacidade; provedor de IA | Aberto, dependem de (e) |
-| Seção 12.9 inteira (restrições propostas pela ECHO) | Proposta `(i)`, aguarda validação |
+| ECHO, ambiguidade 5: PDF só-imagem de fato falha? (a causa foi retirada do texto da seção 12.7 até confirmar) | `~superseded 2026-11-02`: confirmado `(e)`, falha; linha própria na 12.7 |
+| ECHO, ambiguidade 6: aviso de sessão expirada na tela de login | `~superseded 2026-11-02`: resolvido, aviso `(d)` |
+| ECHO, ambiguidades 7 a 9: mensagem do backend sobrescreve a do front; claims de privacidade; provedor de IA | `~superseded 2026-11-02`: 7 confirmada `(e)`; 8 e 9 resolvidas com o aviso de LGPD `(d)` |
+| Seção 12.9 inteira (restrições propostas pela ECHO) | `~superseded 2026-11-02`: aprovada `(d)` |
 | Valor "4 de 6 com evidência" derivado de `requirements[]` no front (MAXWELL) | Confirmar que é aceitável |
 
 **Sugestões da NOVA (não são decisões)**
@@ -1106,3 +1115,4 @@ Veja também: 08, 12, 14.
 | 1.0 | 2026-11-01 | Primeira versão. Conceito Laudo (ARIA); 375 tokens em 3 camadas, Tailwind 3.4, specs de 10 componentes e 3 novos (VerdictBadge, ScoreBadge, EvidenceQuote) (MAXWELL); voz, microcopy, glossário e restrições (ECHO); logo em 4 variantes com SVG e usos proibidos; governança. Status: Review. |
 | 1.1 | 2026-11-01 | Escolhas de Pedro na prancha visual: fundo Sálvia (7 primitivos novos; canvas, surface, sunken, tinta, linhas); símbolo "Infinito com duas pessoas" com versão reduzida; wordmark "vagafit" em Plex Mono com grifo; Heroicons e três ícones próprios; "Apagar" e "Analisar vaga". Contrastes do claro refeitos. |
 | 1.2 | 2026-11-01 | Símbolo 1a com o desenho da rodada 3 da prancha (fita em duas cores com degradê no cruzamento, vão por máscara, arco aberto preenchido); favicon = símbolo no quadrado petróleo; tokens `--color-logo-you` e `--color-logo-job` (385 variáveis); usos proibidos e contrastes refeitos. Mesma escolha de Pedro (1a + e): a versão sobe para 1.2, e não para MAJOR, porque o símbolo escolhido não mudou, só o desenho. |
+| 1.3 | 2026-11-02 | Ambiguidades 2, 5, 6, 7, 8 e 9 da ECHO resolvidas: nova frase de apoio do score, mensagens de PDF escaneado, sessão expirada e aviso de LGPD na 12.7; seção 12.9 aprovada `(d)`. Continuam abertos: busca no INPI e o "4 de 6 com evidência" (o front mostra percentual). |
