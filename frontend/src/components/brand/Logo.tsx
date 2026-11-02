@@ -12,15 +12,21 @@ const INFINITY =
 const OVER = "M19.69 31.04C21.95 30.33 24.3 28.84 26.2 26.6C28.1 24.36 30.47 22.87 32.76 22.16";
 const ARC = "M37.05 11.33A19.6 19.6 0 1 0 28.3 41.82A19.05 19.05 0 1 1 37.05 11.33Z";
 
-type LogoTone = "default" | "inverse";
-
 /**
- * Cores das duas figuras. "inverse" é para o fundo da ação (bg-brand, como a lateral do login):
- * usa os tokens de texto sobre a ação, que se invertem sozinhos no modo escuro.
+ * "default" segue o tema (variante light no claro, dark no escuro).
+ * "dark" fixa a variante dark (BRAND.md 2.3, igual a brand/logo/vagafit-dark.svg) para superfícies
+ * que são escuras nos dois temas, como o painel do login. Não existe variante "inversa" (BRAND.md 2.6).
  */
+type LogoTone = "default" | "dark";
+
 const SYMBOL_COLORS: Record<LogoTone, { you: string; job: string }> = {
   default: { you: "var(--color-logo-you)", job: "var(--color-logo-job)" },
-  inverse: { you: "var(--color-brand-contrast)", job: "var(--color-brand-contrast-muted)" },
+  dark: { you: "#EEF5F5", job: "#4FC1CC" },
+};
+
+const WORDMARK: Record<LogoTone, { text?: string; grifo: string }> = {
+  default: { grifo: "var(--color-logo-grifo)" },
+  dark: { text: "#E6F0F1", grifo: "#8A6A12" },
 };
 
 interface LogoMarkProps {
@@ -72,23 +78,23 @@ interface LogoProps {
 /**
  * Lockup: símbolo com ~1,5 vez o corpo do texto e respiro de 0,4 corpo (proporção da prancha).
  * O tamanho vem do font-size do contêiner (ex.: `text-[19px]`).
- * No tom "inverse" o grifo vira sublinhado, como na variante mono: texto claro sobre âmbar não lê.
  */
 export function Logo({ tone = "default", className }: LogoProps) {
+  const { text, grifo } = WORDMARK[tone];
+
   return (
     <span className={cn("inline-flex items-center gap-[0.4em] leading-none", className)}>
       <LogoMark tone={tone} className="h-[1.5em] w-[1.5em]" />
-      <span className="whitespace-nowrap font-mono font-medium tracking-[-0.01em]">
+      <span
+        className="whitespace-nowrap font-mono font-medium tracking-[-0.01em]"
+        style={text ? { color: text } : undefined}
+      >
         <span className="sr-only">VagaFit</span>
         <span aria-hidden="true">
           vaga
           <span
-            className={cn(
-              "px-[0.04em]",
-              tone === "default"
-                ? "bg-[linear-gradient(transparent_56%,var(--color-logo-grifo)_56%)]"
-                : "underline decoration-2 underline-offset-[0.18em]",
-            )}
+            className="px-[0.04em]"
+            style={{ backgroundImage: `linear-gradient(transparent 56%, ${grifo} 56%)` }}
           >
             fit
           </span>

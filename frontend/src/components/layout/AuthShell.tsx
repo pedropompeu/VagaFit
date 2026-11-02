@@ -11,8 +11,9 @@ interface AuthShellProps {
 export function AuthShell({ title, description, children }: AuthShellProps) {
   return (
     <div className="grid min-h-screen bg-canvas lg:grid-cols-2">
+      {/* Painel de marca (BRAND.md, superfície 5). Petróleo é fundo escuro: leva a variante dark do logo (2.3). */}
       <aside className="hidden flex-col justify-between bg-brand p-2xl text-brand-contrast lg:flex">
-        <Logo tone="inverse" className="text-[22px]" />
+        <Logo tone="dark" className="text-[28px]" />
         <div className="max-w-sm">
           <p className="text-3xl font-semibold leading-tight">Cada ponto, com prova.</p>
           <p className="mt-md text-sm leading-relaxed text-brand-contrast-muted">

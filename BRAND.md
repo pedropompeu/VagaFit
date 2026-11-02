@@ -403,6 +403,8 @@ O Laudo é plano: **a separação é feita por linha de 1px, nunca por sombra pe
 
 **Dark mode.** As mesmas classes funcionam no escuro: só a camada semântica muda. Seletores: `[data-theme="dark"]`, ou `prefers-color-scheme: dark` quando não há `data-theme="light"` (blocos idênticos).
 
+**Tema oficial: claro** `(d)`. O `index.html` fixa `data-theme="light"`, então o app abre claro mesmo com o sistema no escuro. Os tokens escuros ficam guardados para um seletor de tema futuro. No painel de marca do login (petróleo), o logo usa a variante dark (2.3).
+
 `::backdrop` herda variáveis do `<dialog>` só em navegadores atuais (Chrome 122+, Firefox 120+, Safari 17.4+); risco baixo.
 
 Veja também: 03, 08 (Card, Dialog), 09 (skeleton).
@@ -1071,6 +1073,7 @@ Veja também: 08, 12, 14.
 | 2026-11-01 | (i) | Versão reduzida do símbolo (sem arcos) para favicon e ícone de app, abaixo de 32 px `~superseded 2026-11-01`: o favicon passa a ser o próprio 1a no quadrado petróleo, como na rodada 3 |
 | 2026-11-01 | (i) | Três ícones próprios no estilo Heroicons: sem evidência, citação, grifo |
 | 2026-11-01 | (i) | `--color-brand` = petróleo-600; tons derivados do escuro aceitos; ID do trecho = "Currículo · trecho N" |
+| 2026-11-01 | (d) | Tema claro é o oficial: `data-theme="light"` fixo; escuro só por escolha explícita futura |
 
 **Pendente de aprovação de Pedro Pompeu `(d)`**
 
