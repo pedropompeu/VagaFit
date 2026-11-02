@@ -1,3 +1,4 @@
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -7,6 +8,7 @@ import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { Disclosure } from "../components/ui/Disclosure";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -107,6 +109,7 @@ export function JobDetailPage() {
           <>
             <LinkButton to={`/analises/nova?vaga=${job.id}`}>Analisar com um currículo</LinkButton>
             <Button variant="dangerGhost" onClick={openDeleteDialog}>
+              <TrashIcon className="size-4" aria-hidden="true" />
               Apagar
             </Button>
           </>
@@ -135,7 +138,7 @@ export function JobDetailPage() {
               <h2 className="text-base font-semibold text-ink">Resumo da vaga</h2>
               <dl className="mt-sm grid gap-md sm:grid-cols-3">
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                  <dt className="text-caption text-muted">
                     Senioridade
                   </dt>
                   <dd className="mt-2xs text-sm text-ink">
@@ -143,7 +146,7 @@ export function JobDetailPage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                  <dt className="text-caption text-muted">
                     Modelo de trabalho
                   </dt>
                   <dd className="mt-2xs text-sm text-ink">
@@ -151,7 +154,7 @@ export function JobDetailPage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+                  <dt className="text-caption text-muted">
                     Localização
                   </dt>
                   <dd className="mt-2xs text-sm text-ink">
@@ -207,12 +210,9 @@ export function JobDetailPage() {
         ) : null}
 
         <Card className="p-lg">
-          <details>
-            <summary className="cursor-pointer text-sm font-medium text-ink">
-              Ver texto da vaga
-            </summary>
+          <Disclosure summary="Ver texto da vaga" tone="ink">
             <p className="mt-sm whitespace-pre-wrap text-sm text-muted">{job.raw_text}</p>
-          </details>
+          </Disclosure>
         </Card>
       </div>
 

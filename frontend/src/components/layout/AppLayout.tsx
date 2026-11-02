@@ -1,16 +1,35 @@
-import { useState } from "react";
+import {
+  BriefcaseIcon,
+  Cog6ToothIcon,
+  DocumentMagnifyingGlassIcon,
+  DocumentTextIcon,
+  ViewColumnsIcon,
+} from "@heroicons/react/24/outline";
+import { useState, type ComponentType, type SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthContext";
 import { cn } from "../../lib/cn";
+import { Logo } from "../brand/Logo";
 import { Button } from "../ui/Button";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return cn(
-    "rounded-md px-xs py-2xs text-sm font-medium transition-colors",
-    isActive ? "bg-brand-soft text-brand" : "text-muted hover:bg-brand-soft hover:text-brand",
+    "inline-flex items-center gap-2xs rounded-md px-xs py-2xs text-sm font-medium transition-colors",
+    // Página atual não depende só de cor: sublinhado de 2px além do fundo (BRAND.md 8.10).
+    isActive
+      ? "bg-brand-soft text-brand underline decoration-2 underline-offset-[6px]"
+      : "text-muted hover:bg-brand-soft hover:text-brand",
   );
 }
+
+const NAV: { to: string; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
+  { to: "/curriculos", label: "Currículos", Icon: DocumentTextIcon },
+  { to: "/vagas", label: "Vagas", Icon: BriefcaseIcon },
+  { to: "/analises", label: "Análises", Icon: DocumentMagnifyingGlassIcon },
+  { to: "/candidaturas", label: "Candidaturas", Icon: ViewColumnsIcon },
+  { to: "/configuracoes", label: "Configurações", Icon: Cog6ToothIcon },
+];
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -40,23 +59,14 @@ export function AppLayout() {
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-sm px-gutter py-sm lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-md">
-            <span className="text-lg font-semibold tracking-tight text-brand">VagaFit</span>
+            <Logo className="text-[19px] text-ink" />
             <nav aria-label="Navegação principal" className="flex flex-wrap items-center gap-2xs">
-              <NavLink to="/curriculos" className={navLinkClass}>
-                Currículos
-              </NavLink>
-              <NavLink to="/vagas" className={navLinkClass}>
-                Vagas
-              </NavLink>
-              <NavLink to="/analises" className={navLinkClass}>
-                Análises
-              </NavLink>
-              <NavLink to="/candidaturas" className={navLinkClass}>
-                Candidaturas
-              </NavLink>
-              <NavLink to="/configuracoes" className={navLinkClass}>
-                Configurações
-              </NavLink>
+              {NAV.map(({ to, label, Icon }) => (
+                <NavLink key={to} to={to} className={navLinkClass}>
+                  <Icon className="size-4" aria-hidden="true" />
+                  {label}
+                </NavLink>
+              ))}
             </nav>
           </div>
 
@@ -82,7 +92,7 @@ export function AppLayout() {
 
       <footer className="border-t border-line bg-surface">
         <div className="mx-auto w-full max-w-5xl px-gutter py-md text-xs text-muted">
-          VagaFit · preparação para candidaturas com mais contexto
+          VagaFit · aderência entre vaga e currículo, com evidência
         </div>
       </footer>
     </div>

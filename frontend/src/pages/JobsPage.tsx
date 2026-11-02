@@ -1,3 +1,4 @@
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -59,8 +60,8 @@ export function JobsPage() {
     <>
       <PageHeader
         title="Vagas"
-        description="Cadastre o texto das vagas para extrair requisitos e preparar as próximas análises."
-        actions={<LinkButton to="/vagas/nova">Nova vaga</LinkButton>}
+        description="Cole o texto das vagas. O VagaFit extrai os requisitos para as análises."
+        actions={<LinkButton to="/vagas/nova">Colar vaga</LinkButton>}
       />
 
       {pendingCount > 0 ? (
@@ -86,9 +87,9 @@ export function JobsPage() {
         />
       ) : jobs.length === 0 ? (
         <EmptyState
-          title="Nenhuma vaga cadastrada"
-          description="Cole o texto de uma vaga para guardar os requisitos em um só lugar."
-          action={<LinkButton to="/vagas/nova">Cadastrar vaga</LinkButton>}
+          title="Nenhuma vaga ainda"
+          description="Cole o texto de uma vaga. O VagaFit extrai os requisitos e você confere a lista antes de analisar."
+          action={<LinkButton to="/vagas/nova">Colar vaga</LinkButton>}
         />
       ) : (
         <ul className="flex flex-col gap-sm">
@@ -113,6 +114,7 @@ export function JobsPage() {
                       Abrir
                     </LinkButton>
                     <Button variant="dangerGhost" size="sm" onClick={() => openDeleteDialog(job)}>
+                      <TrashIcon className="size-4" aria-hidden="true" />
                       Apagar
                     </Button>
                   </div>

@@ -1,52 +1,667 @@
 /*
- * Tokens provisórios da fase 7. O BRAND.md ainda não existe; quando existir, basta
- * trocar os valores abaixo. Os componentes não usam cores literais.
+ * VagaFit — design-tokens.css (MAXWELL, 2026-11-01)
+ * Conceito "Laudo" (ARIA). Substitui src/styles/tokens.css sem alterar nenhum componente.
+ *
+ * Camadas:  1) Primitivo (valor bruto)  ->  2) Semântico (intenção)  ->  3) Componente (escopo).
+ * Modo claro é o PADRÃO (decisão do brief). Modo escuro: [data-theme="dark"] ou, sem escolha
+ * explícita, prefers-color-scheme: dark (desde que não haja data-theme="light").
+ * Só a camada Semântica muda entre modos; Primitivos nunca mudam; Componentes herdam.
+ * Fundo do modo claro: sálvia, nunca branco (Pedro, 2026-11-01).
+ * Regras do Laudo: sem gradiente; âmbar SÓ para evidência citada; status nunca só por cor.
  */
+
+/* ==========================================================================
+   1) PRIMITIVOS — valores brutos. Não usar direto em componentes.
+   ========================================================================== */
 :root {
-  --color-canvas: #f6f6f1;
-  --color-surface: #ffffff;
-  --color-ink: #1c1c18;
-  --color-muted: #5f5f57;
-  --color-line: #d8d8cf;
+  color-scheme: light; /* modo padrão; o bloco escuro troca para dark */
 
-  --color-brand: #195c4a;
-  --color-brand-hover: #124638;
-  --color-brand-contrast: #ffffff;
-  --color-brand-contrast-muted: #cfe3dc;
-  --color-brand-soft: #e7f1ed;
+  /* --- Petróleo: cor de ação e identidade --- */
+  --color-petroleo-50: #eef6f7;  /* fundo suave de marca */
+  --color-petroleo-100: #d5e9ec; /* borda suave de marca */
+  --color-petroleo-200: #a9d2d8; /* texto secundário sobre marca escura */
+  --color-petroleo-300: #74b4be; /* ação no modo escuro */
+  --color-petroleo-400: #3f8f9c; /* tier claro do data viz */
+  --color-petroleo-500: #1f6f7d; /* foco, barras */
+  --color-petroleo-600: #155a67; /* ação padrão (claro) */
+  --color-petroleo-700: #0f4753; /* hover da ação, logo */
+  --color-petroleo-800: #0b3740; /* pressionado, texto do score */
+  --color-petroleo-900: #072830; /* texto sobre ação no escuro */
 
-  --color-danger: #a32626;
-  --color-danger-hover: #7f1c1c;
-  --color-danger-contrast: #ffffff;
-  --color-danger-soft: #fbeaea;
+  /* --- Grafite: neutros frios (papel e tinta) --- */
+  --color-grafite-0: #ffffff;   /* branco; não é superfície (modo claro usa sálvia) */
+  --color-grafite-25: #fafbfb;  /* reservado: papel mais claro que o canvas */
+  --color-grafite-50: #f3f5f6;  /* canvas claro */
+  --color-grafite-100: #e6eaec; /* trilho de barras, divisor suave */
+  --color-grafite-200: #d2d8db; /* linha de 1px (claro) */
+  --color-grafite-300: #b0b9be; /* texto secundário no escuro */
+  --color-grafite-400: #869299; /* borda de controle, borda tracejada */
+  --color-grafite-500: #63707a; /* reservado: ícones desabilitados */
+  --color-grafite-600: #4a5660; /* texto secundário (claro) */
+  --color-grafite-700: #36414a; /* linha de 1px (escuro) */
+  --color-grafite-800: #232c33; /* superfície escura */
+  --color-grafite-900: #141a1f; /* tinta (claro) e canvas (escuro) */
 
-  --color-success: #1c6b3c;
-  --color-success-soft: #e7f4ec;
+  /* --- Sálvia: neutros com cor do modo claro (2026-11-01, Pedro vetou fundo branco) --- */
+  --color-salvia-50: #edf2ee;  /* superfície clara (cards, cabeçalho, campos) */
+  --color-salvia-100: #dae4dc; /* canvas claro */
+  --color-salvia-200: #c4d3c7; /* trilho de barras, divisor suave */
+  --color-salvia-300: #a9bfaf; /* linha de 1px (claro) */
+  --color-salvia-500: #6e8574; /* borda de controle (3,52:1 sobre surface) */
+  --color-salvia-600: #46544a; /* texto secundário (claro) */
+  --color-salvia-900: #151c17; /* tinta (claro) */
 
-  --color-warning: #8a5a00;
-  --color-warning-soft: #fff3d6;
+  /* --- Âmbar marca-texto: EXCLUSIVO da evidência citada --- */
+  --color-ambar-100: #fff4cc; /* bloco da citação */
+  --color-ambar-200: #ffe699; /* marca-texto sobre o trecho */
+  --color-ambar-300: #ffd45c; /* metadado da citação no escuro */
+  --color-ambar-400: #f5b82e; /* borda de marcação */
+  --color-ambar-700: #7a5502; /* metadado da citação no claro */
+  --color-ambar-mark-dark: rgb(245 184 46 / 20%); /* marca-texto no escuro (20% de opacidade) */
+  --color-ambar-block-dark: rgb(245 184 46 / 8%); /* bloco da citação no escuro */
 
-  --color-overlay: rgb(20 20 15 / 50%);
+  /* --- Status (ARIA): floresta = atende, terracota = em parte/aviso, tijolo = erro --- */
+  --color-floresta-50: #e3f2ea;  /* fundo claro */
+  --color-floresta-300: #a8d5bc; /* borda clara, texto no escuro */
+  --color-floresta-400: #6fbf93; /* derivado (i): sucesso no escuro */
+  --color-floresta-700: #1e6b46; /* texto claro */
+  --color-floresta-900: #12291d; /* derivado (i): fundo no escuro */
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --color-terracota-50: #fcebdd;  /* fundo claro */
+  --color-terracota-300: #ebb894; /* borda clara, texto no escuro */
+  --color-terracota-400: #e49a62; /* derivado (i): aviso no escuro */
+  --color-terracota-700: #9a4a12; /* texto claro */
+  --color-terracota-900: #2d1a0d; /* derivado (i): fundo no escuro */
 
-  --space-2xs: 0.25rem;
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  --space-gutter: 1.5rem;
-  --space-section: 2rem;
+  --color-tijolo-50: #fbe9e9;  /* fundo claro */
+  --color-tijolo-300: #e8b1b3; /* borda clara, texto no escuro */
+  --color-tijolo-400: #e07a7e; /* derivado (i): erro no escuro */
+  --color-tijolo-700: #a3262a; /* texto claro */
+  --color-tijolo-800: #7d1d21; /* derivado (i): hover do perigo */
+  --color-tijolo-900: #2e1214; /* derivado (i): fundo no escuro */
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+  /* --- Utilitárias de cor --- */
+  --color-white: #ffffff;                        /* branco puro */
+  --color-scrim-light: rgb(20 26 31 / 50%);      /* fundo do diálogo (claro) */
+  --color-scrim-dark: rgb(0 0 0 / 60%);          /* fundo do diálogo (escuro) */
 
-  --shadow-card:
-    0 1px 2px rgb(20 20 15 / 6%),
-    0 1px 3px rgb(20 20 15 / 8%);
+  /* --- Escala de tamanho (base 4px, em rem) --- */
+  --size-1: 0.25rem; /* 4px */
+  --size-2: 0.5rem;  /* 8px */
+  --size-3: 0.75rem; /* 12px */
+  --size-4: 1rem;    /* 16px */
+  --size-6: 1.5rem;  /* 24px */
+  --size-8: 2rem;    /* 32px */
+  --size-12: 3rem;   /* 48px */
+  --size-bar: 0.5rem;          /* espessura da barra de dados */
+  --size-icon-sm: 1rem;        /* ícone em texto pequeno */
+  --size-icon-md: 1.25rem;     /* ícone padrão */
+  --size-icon-lg: 1.5rem;      /* ícone em estado vazio */
+  --size-dialog-max: 32rem;    /* largura máxima do diálogo */
+  --size-container-max: 64rem; /* largura máxima do conteúdo */
+  --size-measure: 68ch;        /* medida de leitura longa */
+  --icon-stroke-width: 1.5;    /* traço dos ícones Heroicons outline */
+
+  /* --- Raio, bordas, opacidade --- */
+  --radius-4: 4px;      /* raio pequeno (ARIA) */
+  --radius-6: 6px;      /* raio médio (ARIA) */
+  --radius-10: 10px;    /* raio grande (ARIA) */
+  --radius-pill: 9999px; /* pílula (badges) */
+  --border-width-thin: 1px;   /* linha padrão do Laudo */
+  --border-width-accent: 3px; /* faixa lateral da citação */
+  --border-width-ring: 2px;   /* espessura do anel de foco */
+  --ring-offset: 2px;         /* distância do anel de foco */
+  --opacity-disabled: 0.6;    /* desabilitado */
+
+  /* --- Tipografia: famílias (IBM Plex; fallback até aprovar @fontsource) --- */
+  --font-family-plex-sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif; /* corpo e display */
+  --font-family-plex-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; /* citação, score, IDs */
+
+  /* --- Tipografia: tamanhos (escala ARIA, 9 passos) --- */
+  --font-size-step-1: 0.75rem;   /* micro */
+  --font-size-step-2: 0.8125rem; /* caption */
+  --font-size-step-3: 0.875rem;  /* UI e corpo compacto */
+  --font-size-step-4: 1rem;      /* leitura longa */
+  --font-size-step-5: 1.125rem; /* passo 5 da escala tipográfica */
+  --font-size-step-6: 1.25rem; /* passo 6 da escala tipográfica */
+  --font-size-step-7: 1.5rem; /* passo 7 da escala tipográfica */
+  --font-size-step-8: 1.875rem; /* passo 8 da escala tipográfica */
+  --font-size-step-9: 2.25rem; /* passo 9 da escala tipográfica */
+
+  /* --- Tipografia: alturas de linha, pesos, tracking --- */
+  --leading-tight: 1.15;   /* display */
+  --leading-heading: 1.25; /* títulos */
+  --leading-snug: 1.4;     /* rótulos e h3/h4 */
+  --leading-normal: 1.5;   /* UI */
+  --leading-relaxed: 1.6;  /* leitura longa (ARIA) */
+  --font-weight-regular: 400; /* corpo */
+  --font-weight-medium: 500;  /* rótulos */
+  --font-weight-semibold: 600; /* títulos e display */
+  --tracking-tight: -0.02em;  /* display grande */
+  --tracking-snug: -0.01em;   /* títulos e wordmark */
+  --tracking-normal: 0em;     /* padrão */
+  --tracking-wide: 0.02em;    /* micro em caixa baixa */
+
+  /* --- Motion --- */
+  --duration-fast: 120ms; /* hover, foco */
+  --duration-base: 200ms; /* expandir, trocar estado */
+  --duration-slow: 320ms; /* barras de dados, diálogo */
+  --duration-none: 0.01ms; /* reduced motion: efetivamente instantâneo */
+  --duration-spin: 1s;     /* volta do spinner */
+  --duration-spin-reduced: 2.4s; /* spinner em reduced motion: lento, mas indica atividade */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);  /* mudanças de estado */
+  --ease-enter: cubic-bezier(0, 0, 0, 1);       /* entrada (desacelera) */
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);      /* saída (acelera) */
+  --ease-linear: linear;                         /* spinner */
+
+  /* --- Elevação (Laudo é plano: só overlay e diálogo têm sombra) --- */
+  --shadow-hairline: 0 1px 0 0 rgb(20 26 31 / 4%);          /* borda inferior sutil do card */
+  --shadow-raised: 0 4px 12px -2px rgb(20 26 31 / 12%);      /* menus e popovers */
+  --shadow-floating: 0 12px 32px -4px rgb(20 26 31 / 18%);   /* diálogos */
+  --shadow-hairline-dark: 0 1px 0 0 rgb(0 0 0 / 20%);        /* idem, no escuro */
+  --shadow-raised-dark: 0 4px 12px -2px rgb(0 0 0 / 40%);    /* idem, no escuro */
+  --shadow-floating-dark: 0 12px 32px -4px rgb(0 0 0 / 55%); /* idem, no escuro */
+
+  /* --- Camadas (z-index) --- */
+  --z-sticky: 10;   /* cabeçalho fixo */
+  --z-dropdown: 20; /* menus */
+  --z-overlay: 30;  /* fundo do diálogo */
+  --z-dialog: 40;   /* diálogo */
+  --z-toast: 50;    /* avisos temporários e skip-link */
+}
+
+/* ==========================================================================
+   2) SEMÂNTICOS — intenção. Nomes existentes preservados (troca direta).
+   Valores do MODO CLARO (padrão).
+   ========================================================================== */
+:root {
+  /* --- Superfícies e texto (nomes legados) --- */
+  --color-canvas: var(--color-salvia-100);   /* fundo da página */
+  --color-surface: var(--color-salvia-50);   /* cards, cabeçalho, campos (sem branco) */
+  --color-sunken: var(--color-salvia-100);   /* NOVO: área rebaixada (leitura do currículo, desabilitado) */
+  --color-ink: var(--color-salvia-900);     /* texto principal */
+  --color-muted: var(--color-salvia-600);   /* texto secundário */
+  --color-line: var(--color-salvia-300);    /* divisores e bordas de card */
+  --color-line-strong: var(--color-salvia-500); /* NOVO: borda de controle (>= 3:1, WCAG 1.4.11) */
+  --color-overlay: var(--color-scrim-light); /* fundo atrás do diálogo */
+  --color-logo-you: #13262b; /* símbolo: figura "você" (neutra) */
+  --color-logo-job: #1d7f8c; /* símbolo: figura "a vaga" (petróleo) e arco */
+  --color-logo-grifo: var(--color-ambar-300); /* grifo do "fit" no wordmark */
+
+  /* --- Marca / ação (petróleo) --- */
+  --color-brand: var(--color-petroleo-600);          /* ação, links, foco */
+  --color-brand-hover: var(--color-petroleo-700);    /* hover da ação */
+  --color-brand-active: var(--color-petroleo-800);   /* NOVO: pressionado */
+  --color-brand-contrast: var(--color-white);        /* texto sobre a ação */
+  --color-brand-contrast-muted: var(--color-petroleo-200); /* texto secundário sobre a ação */
+  --color-brand-soft: var(--color-petroleo-50);      /* fundo suave: nav ativo, info */
+
+  /* --- Perigo (tijolo) --- */
+  --color-danger: var(--color-tijolo-700);           /* erro e ação destrutiva */
+  --color-danger-hover: var(--color-tijolo-800);     /* hover do perigo */
+  --color-danger-active: var(--color-tijolo-900);    /* NOVO: pressionado do perigo */
+  --color-danger-contrast: var(--color-white);       /* texto sobre o perigo */
+  --color-danger-soft: var(--color-tijolo-50);       /* fundo de erro */
+
+  /* --- Sucesso (floresta) --- */
+  --color-success: var(--color-floresta-700);        /* sucesso */
+  --color-success-soft: var(--color-floresta-50);    /* fundo de sucesso */
+
+  /* --- Aviso (terracota; o âmbar agora é exclusivo da evidência) --- */
+  --color-warning: var(--color-terracota-700);       /* aviso */
+  --color-warning-soft: var(--color-terracota-50);   /* fundo de aviso */
+
+  /* --- Evidência (âmbar marca-texto) --- */
+  --color-evidence-bg: var(--color-ambar-200);       /* marca-texto sobre o trecho citado */
+  --color-evidence-bg-soft: var(--color-ambar-100);  /* bloco que contém a citação */
+  --color-evidence-border: var(--color-ambar-400);   /* faixa lateral de marcação */
+  --color-evidence-text: var(--color-grafite-900);   /* texto citado (tinta) */
+  --color-evidence-meta: var(--color-ambar-700);     /* ID do trecho em mono */
+
+  /* --- Vereditos (sempre com ícone + texto) --- */
+  --color-verdict-met-text: var(--color-floresta-700);     /* Atende */
+  --color-verdict-met-bg: var(--color-floresta-50); /* veredito Atende: fundo */
+  --color-verdict-met-border: var(--color-floresta-300); /* veredito Atende: borda */
+  --color-verdict-partial-text: var(--color-terracota-700); /* Atende em parte */
+  --color-verdict-partial-bg: var(--color-terracota-50); /* veredito Atende em parte: fundo */
+  --color-verdict-partial-border: var(--color-terracota-300); /* veredito Atende em parte: borda */
+  --color-verdict-not-met-text: var(--color-tijolo-700);    /* Não atende */
+  --color-verdict-not-met-bg: var(--color-tijolo-50); /* veredito Não atende: fundo */
+  --color-verdict-not-met-border: var(--color-tijolo-300); /* veredito Não atende: borda */
+  --color-verdict-no-evidence-text: var(--color-grafite-600); /* Sem evidência */
+  --color-verdict-no-evidence-bg: var(--color-salvia-50); /* veredito Sem evidência: fundo */
+  --color-verdict-no-evidence-border: var(--color-salvia-500); /* veredito Sem evidência: borda */
+  --verdict-no-evidence-border-style: dashed; /* ausência de prova = borda tracejada */
+
+  /* --- Score (neutro; nunca semáforo) --- */
+  --color-score-bg: var(--color-petroleo-50); /* fundo do score */
+  --color-score-text: var(--color-petroleo-800); /* texto do score */
+  --color-score-border: var(--color-petroleo-100); /* borda do score */
+
+  /* --- Foco --- */
+  --focus-ring-color: var(--color-petroleo-500); /* anel de foco do teclado */
+  --focus-ring-width: var(--border-width-ring);  /* espessura */
+  --focus-ring-offset: var(--ring-offset);       /* distância */
+
+  /* --- Data viz (barras do breakdown; só petróleo) --- */
+  --color-dataviz-track: var(--color-salvia-200);   /* trilho */
+  --color-dataviz-fill-1: var(--color-petroleo-600); /* barra padrão */
+  --color-dataviz-fill-2: var(--color-petroleo-400); /* tier secundário (opcional) */
+  --color-dataviz-fill-3: var(--color-petroleo-800); /* tier de destaque (opcional) */
+
+  /* --- Forma (nomes legados) --- */
+  --radius-sm: var(--radius-4);  /* campos pequenos, tags */
+  --radius-md: var(--radius-6);  /* botões, inputs, alertas */
+  --radius-lg: var(--radius-10); /* cards, diálogos */
+  --radius-full: var(--radius-pill); /* badges */
+
+  /* --- Espaçamento (nomes legados, mesmos valores) --- */
+  --space-2xs: var(--size-1); /* espaço 2xs (4px) */
+  --space-xs: var(--size-2); /* espaço xs (8px) */
+  --space-sm: var(--size-3); /* espaço sm (12px) */
+  --space-md: var(--size-4); /* espaço md (16px) */
+  --space-lg: var(--size-6); /* espaço lg (24px) */
+  --space-xl: var(--size-8); /* espaço xl (32px) */
+  --space-2xl: var(--size-12); /* espaço 2xl (48px) */
+  --space-gutter: var(--size-6); /* margem lateral da página */
+  --space-section: var(--size-8); /* respiro vertical entre blocos */
+
+  /* --- Tipografia: famílias --- */
+  --font-sans: var(--font-family-plex-sans);    /* corpo e UI (nome legado) */
+  --font-display: var(--font-family-plex-sans); /* títulos (Plex 600, tracking negativo) */
+  --font-mono: var(--font-family-plex-mono);    /* citação, score, IDs */
+
+  /* --- Tipografia: escala (size + line-height + weight + tracking) --- */
+  --text-display-size: var(--font-size-step-9);   /* herói da página (raro) */
+  --text-display-lh: var(--leading-tight); /* line-height do nível display */
+  --text-display-weight: var(--font-weight-semibold); /* peso do nível display */
+  --text-display-tracking: var(--tracking-tight); /* tracking do nível display */
+  --text-h1-size: var(--font-size-step-8);        /* título de página */
+  --text-h1-lh: var(--leading-heading); /* line-height do nível h1 */
+  --text-h1-weight: var(--font-weight-semibold); /* peso do nível h1 */
+  --text-h1-tracking: var(--tracking-tight); /* tracking do nível h1 */
+  --text-h2-size: var(--font-size-step-7);        /* título de seção */
+  --text-h2-lh: var(--leading-heading); /* line-height do nível h2 */
+  --text-h2-weight: var(--font-weight-semibold); /* peso do nível h2 */
+  --text-h2-tracking: var(--tracking-snug); /* tracking do nível h2 */
+  --text-h3-size: var(--font-size-step-6);        /* título de card */
+  --text-h3-lh: var(--leading-snug); /* line-height do nível h3 */
+  --text-h3-weight: var(--font-weight-semibold); /* peso do nível h3 */
+  --text-h3-tracking: var(--tracking-snug); /* tracking do nível h3 */
+  --text-h4-size: var(--font-size-step-5);        /* título de diálogo */
+  --text-h4-lh: var(--leading-snug); /* line-height do nível h4 */
+  --text-h4-weight: var(--font-weight-semibold); /* peso do nível h4 */
+  --text-h4-tracking: var(--tracking-normal); /* tracking do nível h4 */
+  --text-body-size: var(--font-size-step-4);      /* leitura longa */
+  --text-body-lh: var(--leading-relaxed); /* line-height do nível body */
+  --text-body-weight: var(--font-weight-regular); /* peso do nível body */
+  --text-body-tracking: var(--tracking-normal); /* tracking do nível body */
+  --text-body-sm-size: var(--font-size-step-3);   /* UI padrão (text-sm) */
+  --text-body-sm-lh: var(--leading-normal); /* line-height do nível body-sm */
+  --text-body-sm-weight: var(--font-weight-regular); /* peso do nível body-sm */
+  --text-body-sm-tracking: var(--tracking-normal); /* tracking do nível body-sm */
+  --text-label-size: var(--font-size-step-3);     /* rótulos, botões */
+  --text-label-lh: var(--leading-snug); /* line-height do nível label */
+  --text-label-weight: var(--font-weight-medium); /* peso do nível label */
+  --text-label-tracking: var(--tracking-normal); /* tracking do nível label */
+  --text-caption-size: var(--font-size-step-2);   /* legendas e ajuda */
+  --text-caption-lh: var(--leading-normal); /* line-height do nível caption */
+  --text-caption-weight: var(--font-weight-regular); /* peso do nível caption */
+  --text-caption-tracking: var(--tracking-normal); /* tracking do nível caption */
+  --text-micro-size: var(--font-size-step-1);     /* badges */
+  --text-micro-lh: var(--leading-normal); /* line-height do nível micro */
+  --text-micro-weight: var(--font-weight-medium); /* peso do nível micro */
+  --text-micro-tracking: var(--tracking-wide); /* tracking do nível micro */
+  --text-mono-size: var(--font-size-step-3);      /* trecho citado */
+  --text-mono-lh: var(--leading-relaxed); /* line-height do nível mono */
+  --text-mono-weight: var(--font-weight-regular); /* peso do nível mono */
+  --text-mono-tracking: var(--tracking-normal); /* tracking do nível mono */
+  --text-mono-sm-size: var(--font-size-step-2);   /* ID do trecho, score */
+  --text-mono-sm-lh: var(--leading-normal); /* line-height do nível mono-sm */
+  --text-mono-sm-weight: var(--font-weight-medium); /* peso do nível mono-sm */
+  --text-mono-sm-tracking: var(--tracking-normal); /* tracking do nível mono-sm */
+
+  /* --- Motion (semântico) --- */
+  --motion-duration-fast: var(--duration-fast); /* hover e foco */
+  --motion-duration-base: var(--duration-base); /* expandir e colapsar */
+  --motion-duration-slow: var(--duration-slow); /* barras e diálogo */
+  --motion-duration-spin: var(--duration-spin); /* spinner */
+  --motion-ease-standard: var(--ease-standard); /* easing padrão */
+  --motion-ease-enter: var(--ease-enter); /* easing de entrada */
+  --motion-ease-exit: var(--ease-exit); /* easing de saída */
+  --motion-ease-linear: var(--ease-linear); /* easing linear (spinner) */
+
+  /* --- Elevação (semântico) --- */
+  --shadow-card: var(--shadow-hairline);    /* nome legado: card quase plano */
+  --shadow-popover: var(--shadow-raised);   /* NOVO: menus e popovers */
+  --shadow-dialog: var(--shadow-floating);  /* NOVO: diálogos */
+}
+
+/* ==========================================================================
+   MODO ESCURO — definido uma vez e aplicado em dois seletores idênticos.
+   ========================================================================== */
+:root[data-theme="dark"] {
+  color-scheme: dark; /* controles nativos (scrollbar, select) em escuro */
+
+  /* Superfícies e texto */
+  --color-canvas: var(--color-grafite-900);     /* fundo da página */
+  --color-surface: var(--color-grafite-800);    /* cards e campos */
+  --color-sunken: var(--color-grafite-900);     /* área rebaixada */
+  --color-ink: var(--color-grafite-50);         /* texto principal */
+  --color-muted: var(--color-grafite-300);      /* texto secundário */
+  --color-line: var(--color-grafite-700);       /* divisores */
+  --color-line-strong: var(--color-grafite-400); /* borda de controle */
+  --color-overlay: var(--color-scrim-dark);     /* fundo do diálogo */
+  --color-logo-you: #eef5f5; /* símbolo no escuro: "você" */
+  --color-logo-job: #4fc1cc; /* símbolo no escuro: "a vaga" e arco */
+  --color-logo-grifo: #8a6a12; /* escuro: grifo do "fit" no wordmark */
+
+  /* Marca / ação: petróleo-300 com texto escuro (ARIA) */
+  --color-brand: var(--color-petroleo-300); /* escuro: ação, links, foco */
+  --color-brand-hover: var(--color-petroleo-200); /* escuro: ação no hover */
+  --color-brand-active: var(--color-petroleo-100); /* escuro: ação pressionada */
+  --color-brand-contrast: var(--color-petroleo-900); /* escuro: texto sobre a ação */
+  --color-brand-contrast-muted: var(--color-petroleo-800); /* escuro: texto secundário sobre a ação */
+  --color-brand-soft: var(--color-petroleo-800); /* escuro: fundo suave de marca */
+
+  /* Perigo / sucesso / aviso (tons derivados claros, fundos escuros) */
+  --color-danger: var(--color-tijolo-400); /* escuro: erro e ação destrutiva */
+  --color-danger-hover: var(--color-tijolo-300); /* escuro: perigo no hover */
+  --color-danger-active: var(--color-tijolo-50); /* escuro: perigo pressionado */
+  --color-danger-contrast: var(--color-tijolo-900); /* escuro: texto sobre o perigo */
+  --color-danger-soft: var(--color-tijolo-900); /* escuro: fundo de erro */
+  --color-success: var(--color-floresta-400); /* escuro: sucesso */
+  --color-success-soft: var(--color-floresta-900); /* escuro: fundo de sucesso */
+  --color-warning: var(--color-terracota-400); /* escuro: aviso (terracota) */
+  --color-warning-soft: var(--color-terracota-900); /* escuro: fundo de aviso */
+
+  /* Evidência: marca-texto = âmbar a 20% de opacidade, texto claro */
+  --color-evidence-bg: var(--color-ambar-mark-dark); /* escuro: marca-texto sobre o trecho */
+  --color-evidence-bg-soft: var(--color-ambar-block-dark); /* escuro: bloco da citação */
+  --color-evidence-border: var(--color-ambar-400); /* escuro: faixa lateral de marcação */
+  --color-evidence-text: var(--color-grafite-50); /* escuro: texto citado */
+  --color-evidence-meta: var(--color-ambar-300); /* escuro: ID do trecho */
+
+  /* Vereditos */
+  --color-verdict-met-text: var(--color-floresta-300); /* escuro: veredito Atende: texto */
+  --color-verdict-met-bg: var(--color-floresta-900); /* escuro: veredito Atende: fundo */
+  --color-verdict-met-border: var(--color-floresta-700); /* escuro: veredito Atende: borda */
+  --color-verdict-partial-text: var(--color-terracota-300); /* escuro: veredito Atende em parte: texto */
+  --color-verdict-partial-bg: var(--color-terracota-900); /* escuro: veredito Atende em parte: fundo */
+  --color-verdict-partial-border: var(--color-terracota-700); /* escuro: veredito Atende em parte: borda */
+  --color-verdict-not-met-text: var(--color-tijolo-300); /* escuro: veredito Não atende: texto */
+  --color-verdict-not-met-bg: var(--color-tijolo-900); /* escuro: veredito Não atende: fundo */
+  --color-verdict-not-met-border: var(--color-tijolo-700); /* escuro: veredito Não atende: borda */
+  --color-verdict-no-evidence-text: var(--color-grafite-300); /* escuro: veredito Sem evidência: texto */
+  --color-verdict-no-evidence-bg: var(--color-grafite-900); /* escuro: veredito Sem evidência: fundo */
+  --color-verdict-no-evidence-border: var(--color-grafite-400); /* escuro: veredito Sem evidência: borda */
+
+  /* Score */
+  --color-score-bg: var(--color-petroleo-900); /* escuro: fundo do score */
+  --color-score-text: var(--color-petroleo-100); /* escuro: texto do score */
+  --color-score-border: var(--color-petroleo-700); /* escuro: borda do score */
+
+  /* Foco */
+  --focus-ring-color: var(--color-petroleo-300); /* escuro: anel de foco */
+
+  /* Data viz */
+  --color-dataviz-track: var(--color-grafite-900); /* escuro: trilho da barra */
+  --color-dataviz-fill-1: var(--color-petroleo-300); /* escuro: barra padrão */
+  --color-dataviz-fill-2: var(--color-petroleo-500); /* escuro: barra, tier secundário */
+  --color-dataviz-fill-3: var(--color-petroleo-100); /* escuro: barra, tier de destaque */
+
+  /* Elevação */
+  --shadow-card: var(--shadow-hairline-dark); /* escuro: sombra do card */
+  --shadow-popover: var(--shadow-raised-dark); /* escuro: sombra de menus */
+  --shadow-dialog: var(--shadow-floating-dark); /* escuro: sombra do diálogo */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark; /* controles nativos (scrollbar, select) em escuro */
+
+    /* Superfícies e texto */
+    --color-canvas: var(--color-grafite-900);     /* fundo da página */
+    --color-surface: var(--color-grafite-800);    /* cards e campos */
+    --color-sunken: var(--color-grafite-900);     /* área rebaixada */
+    --color-ink: var(--color-grafite-50);         /* texto principal */
+    --color-muted: var(--color-grafite-300);      /* texto secundário */
+    --color-line: var(--color-grafite-700);       /* divisores */
+    --color-line-strong: var(--color-grafite-400); /* borda de controle */
+    --color-overlay: var(--color-scrim-dark);     /* fundo do diálogo */
+    --color-logo-you: #eef5f5; /* símbolo no escuro: "você" */
+    --color-logo-job: #4fc1cc; /* símbolo no escuro: "a vaga" e arco */
+    --color-logo-grifo: #8a6a12; /* escuro: grifo do "fit" no wordmark */
+
+    /* Marca / ação: petróleo-300 com texto escuro (ARIA) */
+    --color-brand: var(--color-petroleo-300); /* escuro: ação, links, foco */
+    --color-brand-hover: var(--color-petroleo-200); /* escuro: ação no hover */
+    --color-brand-active: var(--color-petroleo-100); /* escuro: ação pressionada */
+    --color-brand-contrast: var(--color-petroleo-900); /* escuro: texto sobre a ação */
+    --color-brand-contrast-muted: var(--color-petroleo-800); /* escuro: texto secundário sobre a ação */
+    --color-brand-soft: var(--color-petroleo-800); /* escuro: fundo suave de marca */
+
+    /* Perigo / sucesso / aviso (tons derivados claros, fundos escuros) */
+    --color-danger: var(--color-tijolo-400); /* escuro: erro e ação destrutiva */
+    --color-danger-hover: var(--color-tijolo-300); /* escuro: perigo no hover */
+    --color-danger-active: var(--color-tijolo-50); /* escuro: perigo pressionado */
+    --color-danger-contrast: var(--color-tijolo-900); /* escuro: texto sobre o perigo */
+    --color-danger-soft: var(--color-tijolo-900); /* escuro: fundo de erro */
+    --color-success: var(--color-floresta-400); /* escuro: sucesso */
+    --color-success-soft: var(--color-floresta-900); /* escuro: fundo de sucesso */
+    --color-warning: var(--color-terracota-400); /* escuro: aviso (terracota) */
+    --color-warning-soft: var(--color-terracota-900); /* escuro: fundo de aviso */
+
+    /* Evidência: marca-texto = âmbar a 20% de opacidade, texto claro */
+    --color-evidence-bg: var(--color-ambar-mark-dark); /* escuro: marca-texto sobre o trecho */
+    --color-evidence-bg-soft: var(--color-ambar-block-dark); /* escuro: bloco da citação */
+    --color-evidence-border: var(--color-ambar-400); /* escuro: faixa lateral de marcação */
+    --color-evidence-text: var(--color-grafite-50); /* escuro: texto citado */
+    --color-evidence-meta: var(--color-ambar-300); /* escuro: ID do trecho */
+
+    /* Vereditos */
+    --color-verdict-met-text: var(--color-floresta-300); /* escuro: veredito Atende: texto */
+    --color-verdict-met-bg: var(--color-floresta-900); /* escuro: veredito Atende: fundo */
+    --color-verdict-met-border: var(--color-floresta-700); /* escuro: veredito Atende: borda */
+    --color-verdict-partial-text: var(--color-terracota-300); /* escuro: veredito Atende em parte: texto */
+    --color-verdict-partial-bg: var(--color-terracota-900); /* escuro: veredito Atende em parte: fundo */
+    --color-verdict-partial-border: var(--color-terracota-700); /* escuro: veredito Atende em parte: borda */
+    --color-verdict-not-met-text: var(--color-tijolo-300); /* escuro: veredito Não atende: texto */
+    --color-verdict-not-met-bg: var(--color-tijolo-900); /* escuro: veredito Não atende: fundo */
+    --color-verdict-not-met-border: var(--color-tijolo-700); /* escuro: veredito Não atende: borda */
+    --color-verdict-no-evidence-text: var(--color-grafite-300); /* escuro: veredito Sem evidência: texto */
+    --color-verdict-no-evidence-bg: var(--color-grafite-900); /* escuro: veredito Sem evidência: fundo */
+    --color-verdict-no-evidence-border: var(--color-grafite-400); /* escuro: veredito Sem evidência: borda */
+
+    /* Score */
+    --color-score-bg: var(--color-petroleo-900); /* escuro: fundo do score */
+    --color-score-text: var(--color-petroleo-100); /* escuro: texto do score */
+    --color-score-border: var(--color-petroleo-700); /* escuro: borda do score */
+
+    /* Foco */
+    --focus-ring-color: var(--color-petroleo-300); /* escuro: anel de foco */
+
+    /* Data viz */
+    --color-dataviz-track: var(--color-grafite-900); /* escuro: trilho da barra */
+    --color-dataviz-fill-1: var(--color-petroleo-300); /* escuro: barra padrão */
+    --color-dataviz-fill-2: var(--color-petroleo-500); /* escuro: barra, tier secundário */
+    --color-dataviz-fill-3: var(--color-petroleo-100); /* escuro: barra, tier de destaque */
+
+    /* Elevação */
+    --shadow-card: var(--shadow-hairline-dark); /* escuro: sombra do card */
+    --shadow-popover: var(--shadow-raised-dark); /* escuro: sombra de menus */
+    --shadow-dialog: var(--shadow-floating-dark); /* escuro: sombra do diálogo */
+  }
+}
+
+/* ==========================================================================
+   MOTION REDUZIDO — durações viram quase instantâneas; spinner fica lento.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: var(--duration-none); /* sem transição perceptível */
+    --motion-duration-base: var(--duration-none); /* duração base (expandir) */
+    --motion-duration-slow: var(--duration-none); /* duração lenta (barras, diálogo) */
+    --motion-duration-spin: var(--duration-spin-reduced); /* spinner continua indicando atividade */
+  }
+}
+
+/* ==========================================================================
+   3) COMPONENTES — escopo por componente. Só var(); nenhum valor literal.
+   ========================================================================== */
+:root {
+  /* --- Button --- */
+  --btn-radius: var(--radius-md);               /* cantos */
+  --btn-gap: var(--space-xs);                   /* ícone <-> rótulo */
+  --btn-px-md: var(--space-md);                 /* padding horizontal md */
+  --btn-py-md: var(--space-sm);                 /* padding vertical md */
+  --btn-px-sm: var(--space-sm);                 /* padding horizontal sm */
+  --btn-py-sm: var(--space-2xs);                /* padding vertical sm */
+  --btn-font-size: var(--text-label-size);      /* tamanho do rótulo */
+  --btn-font-weight: var(--text-label-weight);  /* peso do rótulo */
+  --btn-disabled-opacity: var(--opacity-disabled); /* botão: opacidade desabilitado */
+  --btn-transition-duration: var(--motion-duration-fast); /* botão: duração da transição */
+  --btn-transition-ease: var(--motion-ease-standard); /* botão: curva da transição */
+  --btn-primary-bg: var(--color-brand); /* botão primary: fundo */
+  --btn-primary-bg-hover: var(--color-brand-hover); /* botão primary: fundo no hover */
+  --btn-primary-bg-active: var(--color-brand-active); /* botão primary: fundo pressionado */
+  --btn-primary-text: var(--color-brand-contrast); /* botão primary: cor do texto */
+  --btn-secondary-bg: var(--color-surface); /* botão secondary: fundo */
+  --btn-secondary-bg-active: var(--color-brand-soft); /* botão secondary: fundo pressionado */
+  --btn-secondary-border: var(--color-line-strong); /* botão secondary: cor da borda */
+  --btn-secondary-border-hover: var(--color-brand); /* botão secondary: borda no hover */
+  --btn-secondary-text: var(--color-ink); /* botão secondary: cor do texto */
+  --btn-secondary-text-hover: var(--color-brand); /* botão secondary: texto no hover */
+  --btn-danger-bg: var(--color-danger); /* botão danger: fundo */
+  --btn-danger-bg-hover: var(--color-danger-hover); /* botão danger: fundo no hover */
+  --btn-danger-bg-active: var(--color-danger-active); /* botão danger: fundo pressionado */
+  --btn-danger-text: var(--color-danger-contrast); /* botão danger: cor do texto */
+  --btn-danger-ghost-text: var(--color-danger);  /* variante dangerGhost do código */
+  --btn-danger-ghost-bg-hover: var(--color-danger-soft); /* botão danger-ghost: fundo no hover */
+  --btn-danger-ghost-text-active: var(--color-danger-hover); /* pressionado */
+  --btn-ghost-text: var(--color-muted); /* botão ghost: cor do texto */
+  --btn-ghost-text-hover: var(--color-brand); /* botão ghost: texto no hover */
+  --btn-ghost-bg-hover: var(--color-brand-soft); /* botão ghost: fundo no hover */
+  --btn-ghost-bg-active: var(--color-brand-soft); /* botão ghost: fundo pressionado */
+  --btn-ghost-text-active: var(--color-brand-active); /* pressionado */
+
+  /* --- Input / Textarea / Select --- */
+  --field-bg: var(--color-surface); /* campo: fundo */
+  --field-bg-disabled: var(--color-sunken); /* campo: fundo desabilitado */
+  --field-text: var(--color-ink); /* campo: cor do texto */
+  --field-text-disabled: var(--color-muted); /* campo: texto desabilitado */
+  --field-placeholder: var(--color-muted); /* campo: cor do placeholder */
+  --field-border: var(--color-line-strong); /* campo: cor da borda */
+  --field-border-hover: var(--color-muted); /* campo: borda no hover */
+  --field-border-focus: var(--color-brand); /* campo: borda em foco */
+  --field-border-error: var(--color-danger); /* campo: borda em erro */
+  --field-border-success: var(--color-success); /* campo: borda em sucesso */
+  --field-radius: var(--radius-md); /* campo: raio dos cantos */
+  --field-px: var(--space-sm); /* campo: padding horizontal */
+  --field-py: var(--space-xs); /* campo: padding vertical */
+  --field-error-text: var(--color-danger);      /* mensagem de erro abaixo do campo */
+  --field-help-text: var(--color-muted);        /* texto de ajuda */
+
+  /* --- Badge (tons genéricos) --- */
+  --badge-radius: var(--radius-full); /* badge: raio dos cantos */
+  --badge-px: var(--space-xs); /* badge: padding horizontal */
+  --badge-py: var(--space-2xs); /* badge: padding vertical */
+  --badge-gap: var(--space-2xs); /* badge: espaço entre elementos */
+  --badge-neutral-bg: var(--color-canvas); /* badge neutral: fundo */
+  --badge-neutral-text: var(--color-muted); /* badge neutral: cor do texto */
+  --badge-brand-bg: var(--color-brand-soft); /* badge brand: fundo */
+  --badge-brand-text: var(--color-brand); /* badge brand: cor do texto */
+  --badge-success-bg: var(--color-success-soft); /* badge success: fundo */
+  --badge-success-text: var(--color-success); /* badge success: cor do texto */
+  --badge-warning-bg: var(--color-warning-soft); /* badge warning: fundo */
+  --badge-warning-text: var(--color-warning); /* badge warning: cor do texto */
+  --badge-danger-bg: var(--color-danger-soft); /* badge danger: fundo */
+  --badge-danger-text: var(--color-danger); /* badge danger: cor do texto */
+
+  /* --- VerdictBadge --- */
+  --verdict-badge-radius: var(--radius-sm); /* badge de veredito: raio dos cantos */
+  --verdict-badge-px: var(--space-xs); /* badge de veredito: padding horizontal */
+  --verdict-badge-py: var(--space-2xs); /* badge de veredito: padding vertical */
+  --verdict-badge-gap: var(--space-2xs); /* badge de veredito: espaço entre elementos */
+  --verdict-badge-border-width: var(--border-width-thin); /* badge de veredito: espessura da borda */
+  --verdict-badge-icon-size: var(--size-icon-sm); /* badge de veredito: tamanho do ícone */
+
+  /* --- ScoreBadge --- */
+  --score-badge-radius: var(--radius-sm); /* badge de score: raio dos cantos */
+  --score-badge-px: var(--space-xs); /* badge de score: padding horizontal */
+  --score-badge-py: var(--space-2xs); /* badge de score: padding vertical */
+  --score-badge-font: var(--font-mono); /* badge de score: família da fonte */
+  --score-badge-border-width: var(--border-width-thin); /* badge de score: espessura da borda */
+
+  /* --- EvidenceQuote --- */
+  --evidence-quote-bg: var(--color-evidence-bg-soft); /* citação: fundo */
+  --evidence-quote-mark: var(--color-evidence-bg); /* citação: marca-texto */
+  --evidence-quote-border: var(--color-evidence-border); /* citação: cor da borda */
+  --evidence-quote-border-width: var(--border-width-accent); /* citação: espessura da borda */
+  --evidence-quote-text: var(--color-evidence-text); /* citação: cor do texto */
+  --evidence-quote-meta: var(--color-evidence-meta); /* citação: ID do trecho */
+  --evidence-quote-radius: var(--radius-sm); /* citação: raio dos cantos */
+  --evidence-quote-padding: var(--space-sm); /* citação: respiro interno */
+  --evidence-quote-gap: var(--space-xs); /* citação: espaço entre elementos */
+  --evidence-quote-measure: var(--size-measure); /* citação: largura máxima de leitura */
+  --evidence-quote-expand-duration: var(--motion-duration-base); /* citação: duração de expandir */
+
+  /* --- Card --- */
+  --card-bg: var(--color-surface); /* card: fundo */
+  --card-border: var(--color-line); /* card: cor da borda */
+  --card-border-hover: var(--color-line-strong); /* card: borda no hover */
+  --card-radius: var(--radius-lg); /* card: raio dos cantos */
+  --card-shadow: var(--shadow-card); /* card: elevação */
+  --card-padding: var(--space-lg); /* card: respiro interno */
+
+  /* --- Alert --- */
+  --alert-radius: var(--radius-md); /* alerta: raio dos cantos */
+  --alert-px: var(--space-md); /* alerta: padding horizontal */
+  --alert-py: var(--space-sm); /* alerta: padding vertical */
+  --alert-error-bg: var(--color-danger-soft); /* alerta error: fundo */
+  --alert-error-border: var(--color-danger); /* alerta error: cor da borda */
+  --alert-error-text: var(--color-danger); /* alerta error: cor do texto */
+  --alert-success-bg: var(--color-success-soft); /* alerta success: fundo */
+  --alert-success-border: var(--color-success); /* alerta success: cor da borda */
+  --alert-success-text: var(--color-success); /* alerta success: cor do texto */
+  --alert-info-bg: var(--color-brand-soft); /* alerta info: fundo */
+  --alert-info-border: var(--color-brand); /* alerta info: cor da borda */
+  --alert-info-text: var(--color-brand); /* alerta info: cor do texto */
+  --alert-warning-bg: var(--color-warning-soft); /* alerta warning: fundo */
+  --alert-warning-border: var(--color-warning); /* alerta warning: cor da borda */
+  --alert-warning-text: var(--color-warning); /* alerta warning: cor do texto */
+
+  /* --- Dialog --- */
+  --dialog-bg: var(--color-surface); /* diálogo: fundo */
+  --dialog-border: var(--color-line); /* diálogo: cor da borda */
+  --dialog-radius: var(--radius-lg); /* diálogo: raio dos cantos */
+  --dialog-shadow: var(--shadow-dialog); /* diálogo: elevação */
+  --dialog-backdrop: var(--color-overlay); /* diálogo: fundo atrás do diálogo */
+  --dialog-padding: var(--space-lg); /* diálogo: respiro interno */
+  --dialog-max-width: var(--size-dialog-max); /* diálogo: largura máxima */
+  --dialog-z: var(--z-dialog); /* diálogo: camada z */
+
+  /* --- Nav link --- */
+  --nav-link-radius: var(--radius-md); /* link de navegação: raio dos cantos */
+  --nav-link-px: var(--space-xs); /* link de navegação: padding horizontal */
+  --nav-link-py: var(--space-2xs); /* link de navegação: padding vertical */
+  --nav-link-text: var(--color-muted); /* link de navegação: cor do texto */
+  --nav-link-text-hover: var(--color-brand); /* link de navegação: texto no hover */
+  --nav-link-bg-hover: var(--color-brand-soft); /* link de navegação: fundo no hover */
+  --nav-link-text-current: var(--color-brand); /* link de navegação: texto da página atual */
+  --nav-link-bg-current: var(--color-brand-soft); /* link de navegação: fundo da página atual */
+
+  /* --- Data viz: barra do breakdown --- */
+  --bar-height: var(--size-bar); /* barra de dados: espessura */
+  --bar-radius: var(--radius-sm); /* barra de dados: raio dos cantos */
+  --bar-track: var(--color-dataviz-track); /* barra de dados: trilho */
+  --bar-fill: var(--color-dataviz-fill-1); /* barra de dados: preenchimento */
+  --bar-fill-secondary: var(--color-dataviz-fill-2); /* barra de dados: preenchimento secundário */
+  --bar-fill-emphasis: var(--color-dataviz-fill-3); /* barra de dados: preenchimento de destaque */
+  --bar-empty-border: var(--color-verdict-no-evidence-border); /* grupo sem requisitos: trilho tracejado */
+  --bar-label-text: var(--color-ink); /* barra de dados: cor do rótulo */
+  --bar-value-text: var(--color-muted); /* barra de dados: cor do valor */
+  --bar-value-font: var(--font-mono); /* barra de dados: fonte do valor */
+  --bar-grow-duration: var(--motion-duration-slow); /* barra de dados: duração do preenchimento */
+  --bar-grow-ease: var(--motion-ease-enter); /* barra de dados: curva do preenchimento */
 }

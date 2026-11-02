@@ -17,7 +17,7 @@ const MAX_JOB_TEXT = 30_000;
 const MIN_JOB_TEXT = 20;
 
 export function NewJobPage() {
-  usePageTitle("Nova vaga");
+  usePageTitle("Colar vaga");
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -63,8 +63,8 @@ export function NewJobPage() {
       <PageHeader
         backTo="/vagas"
         backLabel="Vagas"
-        title="Nova vaga"
-        description="Cole o texto completo da vaga. Os requisitos serão extraídos automaticamente."
+        title="Colar vaga"
+        description="Cole o texto completo da vaga. O VagaFit extrai os requisitos e você confere a lista antes de analisar."
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-lg">
@@ -130,7 +130,7 @@ export function NewJobPage() {
 
           <div>
             <Button type="submit" isLoading={createMutation.isPending}>
-              Cadastrar vaga
+              Salvar vaga
             </Button>
           </div>
         </Card>

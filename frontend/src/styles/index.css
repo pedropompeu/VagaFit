@@ -5,10 +5,6 @@
 @tailwind utilities;
 
 @layer base {
-  html {
-    color-scheme: light;
-  }
-
   body {
     @apply bg-canvas font-sans text-ink antialiased;
     min-height: 100vh;
@@ -19,8 +15,8 @@
   }
 
   *:focus-visible {
-    outline: 2px solid var(--color-brand);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
   }
 
   ::selection {

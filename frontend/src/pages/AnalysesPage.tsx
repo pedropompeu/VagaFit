@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { listAnalyses } from "../api/analyses";
 import { listJobs } from "../api/jobs";
 import { listResumes } from "../api/resumes";
+import { ScoreBadge } from "../components/analysis/ScoreBadge";
 import { Badge } from "../components/ui/Badge";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -16,7 +17,6 @@ import {
   ANALYSIS_STATUS_LABELS,
   ANALYSIS_STATUS_TONES,
   formatDateTime,
-  scoreTextClass,
 } from "../lib/format";
 import { usePageTitle } from "../lib/usePageTitle";
 
@@ -63,8 +63,8 @@ export function AnalysesPage() {
       ) : analyses.length === 0 ? (
         <EmptyState
           title="Nenhuma análise ainda"
-          description="Escolha um currículo e uma vaga para ver a aderência, as lacunas e as sugestões."
-          action={<LinkButton to="/analises/nova">Fazer primeira análise</LinkButton>}
+          description="Escolha um currículo e uma vaga. Cada requisito volta com o trecho do currículo que o comprova, ou como lacuna."
+          action={<LinkButton to="/analises/nova">Criar primeira análise</LinkButton>}
         />
       ) : (
         <ul className="flex flex-col gap-sm">
@@ -75,16 +75,7 @@ export function AnalysesPage() {
               <li key={analysis.id}>
                 <Card className="flex flex-col gap-sm p-lg sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-md">
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-canvas text-lg font-semibold"
-                      aria-label={analysis.score === null ? "Sem score" : `Score ${analysis.score}`}
-                    >
-                      {analysis.score === null ? (
-                        <span className="text-muted">–</span>
-                      ) : (
-                        <span className={scoreTextClass(analysis.score)}>{analysis.score}</span>
-                      )}
-                    </div>
+                    <ScoreBadge score={analysis.score} className="shrink-0" />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-xs">
                         <h2 className="truncate font-medium text-ink">

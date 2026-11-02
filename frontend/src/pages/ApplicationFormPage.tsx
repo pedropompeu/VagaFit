@@ -159,9 +159,9 @@ function ApplicationForm({ initial, editing }: ApplicationFormProps) {
   if (!editing && jobs.length === 0) {
     return (
       <EmptyState
-        title="Cadastre uma vaga primeiro"
-        description="A candidatura fica ligada a uma vaga cadastrada no VagaFit."
-        action={<LinkButton to="/vagas/nova">Cadastrar vaga</LinkButton>}
+        title="Cole uma vaga primeiro"
+        description="A candidatura fica ligada a uma vaga salva no VagaFit."
+        action={<LinkButton to="/vagas/nova">Colar vaga</LinkButton>}
       />
     );
   }
@@ -317,12 +317,12 @@ function ApplicationForm({ initial, editing }: ApplicationFormProps) {
 }
 
 export function NewApplicationPage() {
-  usePageTitle("Nova candidatura");
+  usePageTitle("Registrar candidatura");
   const [searchParams] = useSearchParams();
 
   return (
     <>
-      <PageHeader backTo="/candidaturas" backLabel="Candidaturas" title="Nova candidatura" />
+      <PageHeader backTo="/candidaturas" backLabel="Candidaturas" title="Registrar candidatura" />
       <ApplicationForm
         editing={null}
         initial={{

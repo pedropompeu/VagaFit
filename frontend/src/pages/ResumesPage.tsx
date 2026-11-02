@@ -1,3 +1,4 @@
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -51,8 +52,8 @@ export function ResumesPage() {
     <>
       <PageHeader
         title="Currículos"
-        description="Cadastre versões do seu currículo para usar nas análises de aderência."
-        actions={<LinkButton to="/curriculos/novo">Novo currículo</LinkButton>}
+        description="Guarde as versões do seu currículo. A análise cita trechos delas como evidência."
+        actions={<LinkButton to="/curriculos/novo">Adicionar currículo</LinkButton>}
       />
 
       {isInitialLoading ? (
@@ -64,9 +65,9 @@ export function ResumesPage() {
         />
       ) : resumes.length === 0 ? (
         <EmptyState
-          title="Nenhum currículo cadastrado"
-          description="Cole o texto do seu currículo ou envie um PDF para começar."
-          action={<LinkButton to="/curriculos/novo">Cadastrar currículo</LinkButton>}
+          title="Nenhum currículo ainda"
+          description="A análise cita trechos do seu currículo como evidência. Cole o texto ou envie um PDF."
+          action={<LinkButton to="/curriculos/novo">Adicionar currículo</LinkButton>}
         />
       ) : (
         <ul className="flex flex-col gap-sm">
@@ -88,6 +89,7 @@ export function ResumesPage() {
                     size="sm"
                     onClick={() => openDeleteDialog(resume)}
                   >
+                    <TrashIcon className="size-4" aria-hidden="true" />
                     Apagar
                   </Button>
                 </div>

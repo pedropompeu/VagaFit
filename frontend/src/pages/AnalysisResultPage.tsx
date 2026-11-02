@@ -6,11 +6,14 @@ import { createAnalysis, getAnalysis } from "../api/analyses";
 import { getJob } from "../api/jobs";
 import { getResume } from "../api/resumes";
 import { EvidenceList } from "../components/analysis/EvidenceList";
+import { ScoreBadge } from "../components/analysis/ScoreBadge";
 import { ScreeningSection } from "../components/analysis/ScreeningSection";
+import { VerdictBadge } from "../components/analysis/VerdictBadge";
 import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { Disclosure } from "../components/ui/Disclosure";
 import { ErrorState } from "../components/ui/ErrorState";
 import { LinkButton } from "../components/ui/LinkButton";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -22,10 +25,7 @@ import {
   formatDateTime,
   formatPercent,
   KIND_LABELS,
-  scoreTextClass,
   SENIORITY_LABELS,
-  VERDICT_LABELS,
-  VERDICT_TONES,
   WORK_MODEL_LABELS,
 } from "../lib/format";
 import { usePageTitle } from "../lib/usePageTitle";
@@ -39,11 +39,10 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
 
   return (
     <Card className="flex flex-col gap-md p-lg sm:flex-row sm:items-center sm:gap-xl">
-      <div className="text-center sm:text-left">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">Aderência</p>
-        <p className={`text-6xl font-semibold leading-none ${scoreTextClass(result.score)}`}>
-          {result.score}
-          <span className="text-2xl text-muted">/100</span>
+      <div className="flex flex-col gap-xs sm:max-w-[16rem]">
+        <ScoreBadge score={result.score} size="lg" showLabel />
+        <p className="text-caption text-muted">
+          Resume quantos requisitos desta vaga o currículo comprova. Não avalia você.
         </p>
       </div>
       <dl className="grid flex-1 gap-sm sm:grid-cols-2">
@@ -52,13 +51,19 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
             <dt className="text-sm text-muted">{label}</dt>
             <dd className="mt-2xs">
               {value === null ? (
-                <span className="text-sm text-muted">A vaga não lista itens deste tipo</span>
+                <div className="flex items-center gap-xs">
+                  <div
+                    className="h-2 flex-1 rounded-full border border-dashed border-line-strong"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm text-muted">A vaga não lista.</span>
+                </div>
               ) : (
                 <div className="flex items-center gap-xs">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-canvas" aria-hidden="true">
-                    <div className="h-full rounded-full bg-brand" style={{ width: formatPercent(value) }} />
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-dataviz-track" aria-hidden="true">
+                    <div className="h-full rounded-full bg-dataviz-1" style={{ width: formatPercent(value) }} />
                   </div>
-                  <span className="w-12 text-right text-sm font-medium text-ink">
+                  <span className="w-12 text-right font-mono text-mono-sm tabular-nums text-ink">
                     {formatPercent(value)}
                   </span>
                 </div>
@@ -69,14 +74,6 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
       </dl>
     </Card>
   );
-}
-
-function VerdictBadge({ requirement }: { requirement: RequirementResult }) {
-  // Regra de honestidade: "Atende" só aparece com citação do currículo ao lado.
-  if (requirement.verdict === "met" && requirement.evidence.length === 0) {
-    return <Badge tone="warning">Sem evidência: revise</Badge>;
-  }
-  return <Badge tone={VERDICT_TONES[requirement.verdict]}>{VERDICT_LABELS[requirement.verdict]}</Badge>;
 }
 
 function RequirementRow({
@@ -94,20 +91,17 @@ function RequirementRow({
             <p className="text-sm font-medium text-ink">{requirement.text}</p>
             <p className="mt-2xs text-xs text-muted">{KIND_LABELS[requirement.kind]}</p>
           </div>
-          <VerdictBadge requirement={requirement} />
+          <VerdictBadge verdict={requirement.verdict} hasEvidence={requirement.evidence.length > 0} />
         </div>
         {requirement.rationale ? (
           <p className="mt-xs text-sm text-muted">{requirement.rationale}</p>
         ) : null}
         {requirement.evidence.length > 0 ? (
-          <details className="mt-xs">
-            <summary className="cursor-pointer text-sm font-medium text-brand">
-              Evidência no currículo ({requirement.evidence.length})
-            </summary>
+          <Disclosure summary={<>Evidência no currículo ({requirement.evidence.length})</>} className="mt-xs">
             <div className="mt-xs">
               <EvidenceList evidence={requirement.evidence} chunks={chunks} />
             </div>
-          </details>
+          </Disclosure>
         ) : (
           <p className="mt-xs text-xs text-muted">Nenhum trecho do currículo comprova este item.</p>
         )}
@@ -130,15 +124,15 @@ function ResultSections({
       <Card className="p-lg">
         <dl className="grid gap-md sm:grid-cols-3">
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted">Senioridade</dt>
+            <dt className="text-caption text-muted">Senioridade</dt>
             <dd className="mt-2xs text-sm text-ink">{SENIORITY_LABELS[result.job.seniority]}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted">Modelo</dt>
+            <dt className="text-caption text-muted">Modelo</dt>
             <dd className="mt-2xs text-sm text-ink">{WORK_MODEL_LABELS[result.job.work_model]}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium uppercase tracking-wide text-muted">Stack</dt>
+            <dt className="text-caption text-muted">Stack</dt>
             <dd className="mt-2xs flex flex-wrap gap-2xs">
               {result.job.stack.length === 0 ? (
                 <span className="text-sm text-muted">Não identificada</span>
@@ -180,7 +174,7 @@ function ResultSections({
             <ul className="flex flex-col gap-xs">
               {result.gaps.map((gap) => (
                 <li key={gap.requirement_id} className="flex flex-wrap items-center gap-xs text-sm">
-                  <Badge tone={VERDICT_TONES[gap.verdict]}>{VERDICT_LABELS[gap.verdict]}</Badge>
+                  <VerdictBadge verdict={gap.verdict} hasEvidence={false} />
                   <span className="text-ink">{gap.text}</span>
                   <span className="text-xs text-muted">· {KIND_LABELS[gap.kind]}</span>
                 </li>
@@ -195,7 +189,7 @@ function ResultSections({
           Sugestões de reescrita
         </h2>
         <p className="mb-sm text-sm text-muted">
-          Só reformulam o que já está no currículo; nada é inventado.
+          Só reformulam o que já está no currículo. Nenhum fato novo entra.
         </p>
         {result.suggestions.length === 0 ? (
           <p className="text-sm text-muted">Nenhuma sugestão para este par.</p>

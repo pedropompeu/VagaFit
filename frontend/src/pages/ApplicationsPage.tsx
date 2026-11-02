@@ -1,3 +1,4 @@
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -78,7 +79,7 @@ export function ApplicationsPage() {
       <PageHeader
         title="Candidaturas"
         description="Acompanhe onde você se candidatou, em que etapa está e qual é o próximo passo."
-        actions={<LinkButton to="/candidaturas/nova">Nova candidatura</LinkButton>}
+        actions={<LinkButton to="/candidaturas/nova">Registrar candidatura</LinkButton>}
       />
 
       <div className="mb-md flex flex-wrap items-center gap-xs" role="group" aria-label="Filtrar por status">
@@ -128,7 +129,7 @@ export function ApplicationsPage() {
         ) : (
           <EmptyState
             title="Nenhuma candidatura registrada"
-            description="Registre as vagas em que você se candidatou para acompanhar cada etapa."
+            description="Registre as vagas em que você se candidatou e acompanhe cada etapa, do envio à proposta."
             action={<LinkButton to="/candidaturas/nova">Registrar candidatura</LinkButton>}
           />
         )
@@ -204,6 +205,7 @@ export function ApplicationsPage() {
                         setToDelete(application);
                       }}
                     >
+                      <TrashIcon className="size-4" aria-hidden="true" />
                       Apagar
                     </Button>
                   </div>

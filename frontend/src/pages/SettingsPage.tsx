@@ -31,7 +31,7 @@ export function SettingsPage() {
     onSuccess: () => {
       navigate("/entrar", {
         replace: true,
-        state: { notice: "Sua conta foi apagada. Sentiremos sua falta." },
+        state: { notice: "Conta apagada. Currículos, vagas e análises foram apagados." },
       });
     },
   });
@@ -86,11 +86,11 @@ export function SettingsPage() {
           <h2 className="text-base font-semibold text-ink">Conta</h2>
           <dl className="mt-sm grid gap-md sm:grid-cols-2">
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-muted">E-mail</dt>
+              <dt className="text-caption text-muted">E-mail</dt>
               <dd className="mt-2xs break-all text-sm text-ink">{user?.email ?? "—"}</dd>
             </div>
             <div>
-              <dt className="text-xs font-medium uppercase tracking-wide text-muted">
+              <dt className="text-caption text-muted">
                 Conta criada em
               </dt>
               <dd className="mt-2xs text-sm text-ink">
@@ -103,8 +103,8 @@ export function SettingsPage() {
         <Card className="border-danger p-lg">
           <h2 className="text-base font-semibold text-danger">Apagar minha conta</h2>
           <p className="mt-xs max-w-2xl text-sm text-muted">
-            A exclusão é definitiva e remove seus currículos, vagas e dados vinculados. Para
-            confirmar, você precisa digitar o e-mail da conta e a senha atual.
+            Apagar a conta é definitivo: seus currículos, vagas, análises e candidaturas vão junto.
+            Para confirmar, digite o e-mail da conta e a senha atual.
           </p>
           <Button variant="danger" className="mt-md" onClick={openDeleteDialog}>
             Apagar minha conta
@@ -115,8 +115,8 @@ export function SettingsPage() {
       <ConfirmDialog
         open={isDeleteOpen}
         title="Apagar minha conta?"
-        description="Todos os seus currículos, vagas e dados vinculados serão apagados definitivamente. Esta ação não pode ser desfeita."
-        confirmLabel="Apagar conta"
+        description="Currículos, vagas, análises e candidaturas serão apagados. Não dá para desfazer."
+        confirmLabel="Apagar conta e todos os dados"
         tone="danger"
         isConfirming={deleteMutation.isPending}
         initialFocusRef={emailInputRef}

@@ -12,7 +12,7 @@ export function ErrorState({
   title = "Não foi possível carregar",
   description,
   onRetry,
-  retryLabel = "Tentar novamente",
+  retryLabel = "Tentar de novo",
 }: ErrorStateProps) {
   return (
     <Card className="flex flex-col items-center gap-sm px-lg py-2xl text-center">

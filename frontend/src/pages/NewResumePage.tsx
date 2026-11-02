@@ -1,3 +1,4 @@
+import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -30,7 +31,7 @@ function modeButtonClass(active: boolean): string {
 }
 
 export function NewResumePage() {
-  usePageTitle("Novo currículo");
+  usePageTitle("Adicionar currículo");
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -151,7 +152,7 @@ export function NewResumePage() {
       <PageHeader
         backTo="/curriculos"
         backLabel="Currículos"
-        title="Novo currículo"
+        title="Adicionar currículo"
         description="Cole o texto ou envie um PDF. Você pode conferir a divisão em trechos antes de salvar."
       />
 
@@ -202,6 +203,7 @@ export function NewResumePage() {
                 className={modeButtonClass(mode === "file")}
                 onClick={() => handleModeChange("file")}
               >
+                <ArrowUpTrayIcon className="size-4" aria-hidden="true" />
                 Enviar PDF
               </button>
             </div>

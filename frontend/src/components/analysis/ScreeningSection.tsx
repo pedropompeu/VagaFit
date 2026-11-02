@@ -8,6 +8,7 @@ import { Alert } from "../ui/Alert";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Disclosure } from "../ui/Disclosure";
 import { Field } from "../ui/Field";
 import { Spinner } from "../ui/Spinner";
 import { Textarea } from "../ui/Textarea";
@@ -57,14 +58,11 @@ function AnswerCard({ answer, chunks }: { answer: ScreeningAnswer; chunks: Map<s
       <p className="mt-sm whitespace-pre-wrap text-sm text-ink">{answer.answer}</p>
 
       {answer.evidence.length > 0 ? (
-        <details className="mt-sm">
-          <summary className="cursor-pointer text-sm font-medium text-brand">
-            Evidências ({answer.evidence.length})
-          </summary>
+        <Disclosure summary={<>Evidências ({answer.evidence.length})</>} className="mt-sm">
           <div className="mt-xs">
             <EvidenceList evidence={answer.evidence} chunks={chunks} />
           </div>
-        </details>
+        </Disclosure>
       ) : null}
 
       <div className="mt-sm">
@@ -141,10 +139,12 @@ export function ScreeningSection({ analysisId, chunks }: ScreeningSectionProps) 
           </Field>
           <div className="flex flex-wrap items-center gap-sm">
             <Button type="submit" isLoading={mutation.isPending}>
-              Gerar rascunhos
+              {count === 1 ? "Gerar rascunho de triagem" : "Gerar rascunhos de triagem"}
             </Button>
             {mutation.isPending ? (
-              <span className="text-sm text-muted">Isso pode levar alguns segundos.</span>
+              <span className="text-sm text-muted">
+                Escrevendo os rascunhos a partir do seu currículo. Pode levar alguns segundos.
+              </span>
             ) : null}
           </div>
         </form>

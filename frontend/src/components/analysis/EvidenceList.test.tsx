@@ -11,8 +11,8 @@ const chunk: ResumeChunk = {
 };
 
 describe("EvidenceList", () => {
-  it("mostra a citação e o trecho completo do currículo", () => {
-    render(
+  it("mostra a citação, a legenda do trecho e o trecho completo com a citação marcada", () => {
+    const { container } = render(
       <EvidenceList
         evidence={[{ chunk_id: "c1", quote: "APIs REST em Python" }]}
         chunks={new Map([["c1", chunk]])}
@@ -20,14 +20,30 @@ describe("EvidenceList", () => {
     );
 
     expect(screen.getByText("“APIs REST em Python”")).toBeTruthy();
-    expect(screen.getByText("Ver trecho 1 do currículo")).toBeTruthy();
-    expect(screen.getByText(chunk.content)).toBeTruthy();
+    expect(screen.getByText("Currículo · trecho 1")).toBeTruthy();
+    expect(screen.getByText("Ver trecho 1 completo")).toBeTruthy();
+
+    const full = container.querySelector("details p");
+    expect(full?.textContent).toBe(chunk.content);
+    expect(full?.querySelector("mark")?.textContent).toBe("APIs REST em Python");
+  });
+
+  it("nunca mostra o ID bruto do trecho", () => {
+    render(
+      <EvidenceList
+        evidence={[{ chunk_id: "c1", quote: "APIs REST em Python" }]}
+        chunks={new Map([["c1", chunk]])}
+      />,
+    );
+
+    expect(screen.queryByText(/c1/)).toBeNull();
   });
 
   it("mostra a citação mesmo sem o trecho carregado", () => {
     render(<EvidenceList evidence={[{ chunk_id: "x", quote: "Docker" }]} chunks={new Map()} />);
 
     expect(screen.getByText("“Docker”")).toBeTruthy();
+    expect(screen.getByText("Currículo")).toBeTruthy();
     expect(screen.queryByText(/Ver trecho/)).toBeNull();
   });
 });

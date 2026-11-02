@@ -1,3 +1,4 @@
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
@@ -24,7 +25,7 @@ export function PageHeader({
             to={backTo}
             className="mb-2xs inline-flex items-center gap-2xs text-sm text-muted transition-colors hover:text-brand"
           >
-            <span aria-hidden="true">←</span>
+            <ArrowLeftIcon className="size-4" aria-hidden="true" />
             {backLabel}
           </Link>
         ) : null}

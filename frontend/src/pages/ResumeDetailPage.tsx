@@ -1,3 +1,4 @@
+import { TrashIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -7,6 +8,7 @@ import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { Disclosure } from "../components/ui/Disclosure";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
 import { LinkButton } from "../components/ui/LinkButton";
@@ -84,6 +86,7 @@ export function ResumeDetailPage() {
           <>
             <LinkButton to={`/analises/nova?curriculo=${resume.id}`}>Analisar com uma vaga</LinkButton>
             <Button variant="dangerGhost" onClick={openDeleteDialog}>
+              <TrashIcon className="size-4" aria-hidden="true" />
               Apagar
             </Button>
           </>
@@ -106,7 +109,7 @@ export function ResumeDetailPage() {
               {resume.chunks.map((chunk) => (
                 <li key={chunk.id}>
                   <Card className="p-lg">
-                    <p className="mb-2xs text-xs font-medium uppercase tracking-wide text-muted">
+                    <p className="mb-2xs font-mono text-mono-sm text-muted">
                       Trecho {chunk.ordinal + 1}
                     </p>
                     <p className="whitespace-pre-wrap text-sm text-ink">{chunk.content}</p>
@@ -118,12 +121,9 @@ export function ResumeDetailPage() {
         </section>
 
         <Card className="p-lg">
-          <details>
-            <summary className="cursor-pointer text-sm font-medium text-ink">
-              Ver texto completo
-            </summary>
+          <Disclosure summary="Ver texto completo" tone="ink">
             <p className="mt-sm whitespace-pre-wrap text-sm text-muted">{resume.raw_text}</p>
-          </details>
+          </Disclosure>
         </Card>
       </div>
 

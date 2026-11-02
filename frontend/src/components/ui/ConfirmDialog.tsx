@@ -71,7 +71,7 @@ export function ConfirmDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget && !isConfirming) onClose();
       }}
-      className="w-[calc(100%-2rem)] max-w-lg rounded-lg border border-line bg-surface p-0 text-ink shadow-card backdrop:bg-overlay"
+      className="w-[calc(100%-2rem)] max-w-lg rounded-lg border border-line bg-surface p-0 text-ink shadow-dialog backdrop:bg-overlay"
     >
       <div className="p-lg">
         <h2 id={titleId} className="text-lg font-semibold text-ink">

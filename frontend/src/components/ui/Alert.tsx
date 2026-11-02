@@ -1,4 +1,10 @@
-import type { ReactNode } from "react";
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/outline";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 
 import { cn } from "../../lib/cn";
 
@@ -11,6 +17,14 @@ const variantClasses: Record<AlertVariant, string> = {
   warning: "border-warning bg-warning-soft text-warning",
 };
 
+/** Status nunca só por cor: cada variante tem o seu ícone (BRAND.md 8.8). */
+const variantIcons: Record<AlertVariant, ComponentType<SVGProps<SVGSVGElement>>> = {
+  error: ExclamationCircleIcon,
+  success: CheckCircleIcon,
+  info: InformationCircleIcon,
+  warning: ExclamationTriangleIcon,
+};
+
 interface AlertProps {
   variant?: AlertVariant;
   title?: string;
@@ -19,13 +33,17 @@ interface AlertProps {
 }
 
 export function Alert({ variant = "info", title, className, children }: AlertProps) {
+  const Icon = variantIcons[variant];
   return (
     <div
       role={variant === "error" ? "alert" : "status"}
-      className={cn("rounded-md border px-md py-sm text-sm", variantClasses[variant], className)}
+      className={cn("flex gap-xs rounded-md border px-md py-sm text-sm", variantClasses[variant], className)}
     >
-      {title ? <p className="font-medium">{title}</p> : null}
-      {children ? <div className={cn(title && "mt-2xs")}>{children}</div> : null}
+      <Icon className="mt-px size-5 shrink-0" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        {title ? <p className="font-medium">{title}</p> : null}
+        {children ? <div className={cn(title && "mt-2xs")}>{children}</div> : null}
+      </div>
     </div>
   );
 }

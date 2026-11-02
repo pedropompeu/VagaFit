@@ -4,7 +4,6 @@ import type {
   ApplicationStatus,
   RequirementKind,
   Seniority,
-  Verdict,
   WorkModel,
 } from "../types/api";
 
@@ -83,18 +82,6 @@ export function formatPercent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }
 
-export const VERDICT_LABELS: Record<Verdict, string> = {
-  met: "Atende",
-  partial: "Atende em parte",
-  not_met: "Não atende",
-};
-
-export const VERDICT_TONES: Record<Verdict, BadgeTone> = {
-  met: "success",
-  partial: "warning",
-  not_met: "danger",
-};
-
 export const KIND_LABELS: Record<RequirementKind, string> = {
   required: "Obrigatório",
   nice_to_have: "Diferencial",
@@ -133,21 +120,3 @@ export const APPLICATION_STATUS_TONES: Record<ApplicationStatus, BadgeTone> = {
   rejected: "danger",
   no_response: "neutral",
 };
-
-export function scoreTone(score: number): BadgeTone {
-  if (score >= 70) return "success";
-  if (score >= 40) return "warning";
-  return "danger";
-}
-
-const SCORE_TEXT_CLASSES: Record<BadgeTone, string> = {
-  success: "text-success",
-  warning: "text-warning",
-  danger: "text-danger",
-  neutral: "text-ink",
-  brand: "text-brand",
-};
-
-export function scoreTextClass(score: number): string {
-  return SCORE_TEXT_CLASSES[scoreTone(score)];
-}

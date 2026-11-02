@@ -1,3 +1,4 @@
+import { DocumentMagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -127,9 +128,9 @@ export function NewAnalysisPage() {
       <>
         {header}
         <EmptyState
-          title="Cadastre um currículo primeiro"
+          title="Adicione um currículo primeiro"
           description="A análise compara um currículo seu com os requisitos da vaga."
-          action={<LinkButton to="/curriculos/novo">Cadastrar currículo</LinkButton>}
+          action={<LinkButton to="/curriculos/novo">Adicionar currículo</LinkButton>}
         />
       </>
     );
@@ -166,7 +167,7 @@ export function NewAnalysisPage() {
               <div className="flex flex-wrap gap-xs" role="radiogroup" aria-label="Origem da vaga">
                 {(
                   [
-                    ["existing", "Vaga cadastrada"],
+                    ["existing", "Vaga salva"],
                     ["new", "Colar vaga nova"],
                   ] as const
                 ).map(([mode, label]) => (
@@ -190,7 +191,7 @@ export function NewAnalysisPage() {
             ) : null}
 
             {effectiveJobMode === "existing" ? (
-              <Field label="Vaga cadastrada" htmlFor="analysis-job" required>
+              <Field label="Vaga salva" htmlFor="analysis-job" required>
                 <Select
                   id="analysis-job"
                   value={selectedJobId}
@@ -245,7 +246,10 @@ export function NewAnalysisPage() {
 
           <div>
             <Button type="submit" isLoading={submitMutation.isPending}>
-              Analisar
+              {submitMutation.isPending ? null : (
+                <DocumentMagnifyingGlassIcon className="size-4" aria-hidden="true" />
+              )}
+              Analisar vaga
             </Button>
           </div>
         </Card>
