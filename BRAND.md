@@ -1090,7 +1090,7 @@ Veja também: 08, 12, 14.
 | Item | Estado |
 |---|---|
 | `lucide-react` como dependência | `~superseded 2026-11-01`: resolvido, Heroicons `(d)` |
-| Busca de anterioridade da marca no INPI (símbolo e nome) | Aberto; antes de registro ou uso comercial |
+| Busca de anterioridade da marca no INPI (símbolo e nome) | Aberto; antes de registro ou uso comercial. Bloqueada: o nome definitivo ainda será decidido `(d)` 2026-11-02 |
 | ECHO, ambiguidade 2: fórmula do score (a frase de apoio assume que o score resume requisitos com evidência) | `~superseded 2026-11-02`: resolvido, frase nova `(d)` |
 | ECHO, ambiguidade 3: "Apagar" × "Excluir" (recomendação: manter **Apagar**) | `~superseded 2026-11-01`: resolvido, **Apagar** `(d)` |
 | ECHO, ambiguidade 4: "Analisar vaga" × "Criar análise" no botão | `~superseded 2026-11-01`: resolvido, **Analisar vaga** `(d)` |
