@@ -22,8 +22,9 @@ import { Spinner } from "../components/ui/Spinner";
 import { getApiErrorMessage } from "../lib/errors";
 import {
   ANALYSIS_STATUS_LABELS,
+  countWithEvidence,
   formatDateTime,
-  formatPercent,
+  formatEvidenceCount,
   KIND_LABELS,
   SENIORITY_LABELS,
   WORK_MODEL_LABELS,
@@ -32,9 +33,10 @@ import { usePageTitle } from "../lib/usePageTitle";
 import type { AnalysisResult, RequirementResult, ResumeChunk } from "../types/api";
 
 function ScoreCard({ result }: { result: AnalysisResult }) {
+  // O percentual ponderado só define o comprimento; o texto é a contagem (BRAND.md 10).
   const breakdown = [
-    ["Obrigatórios", result.breakdown.required],
-    ["Diferenciais", result.breakdown.nice_to_have],
+    ["Obrigatórios", result.breakdown.required, countWithEvidence(result.requirements, "required")],
+    ["Diferenciais", result.breakdown.nice_to_have, countWithEvidence(result.requirements, "nice_to_have")],
   ] as const;
 
   return (
@@ -46,7 +48,7 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
         </p>
       </div>
       <dl className="grid flex-1 gap-sm sm:grid-cols-2">
-        {breakdown.map(([label, value]) => (
+        {breakdown.map(([label, value, count]) => (
           <div key={label}>
             <dt className="text-sm text-muted">{label}</dt>
             <dd className="mt-2xs">
@@ -61,10 +63,10 @@ function ScoreCard({ result }: { result: AnalysisResult }) {
               ) : (
                 <div className="flex items-center gap-xs">
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-dataviz-track" aria-hidden="true">
-                    <div className="h-full rounded-full bg-dataviz-1" style={{ width: formatPercent(value) }} />
+                    <div className="h-full rounded-full bg-dataviz-1" style={{ width: `${value * 100}%` }} />
                   </div>
-                  <span className="w-12 text-right font-mono text-mono-sm tabular-nums text-ink">
-                    {formatPercent(value)}
+                  <span className="whitespace-nowrap text-right font-mono text-mono-sm tabular-nums text-ink">
+                    {formatEvidenceCount(count.withEvidence, count.total)}
                   </span>
                 </div>
               )}

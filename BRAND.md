@@ -1,5 +1,5 @@
 # VagaFit — Brand Identity System
-> Versão 1.3 · 2026-11-02 · Status: Review (pendências na seção 14.4)
+> Versão 1.3.1 · 2026-11-02 · Status: Review (pendências na seção 14.4)
 
 Conceito de marca: **Laudo**. Tagline: **Cada ponto, com prova.** Linha de apoio: **Sem prova, é lacuna.**
 
@@ -1083,6 +1083,7 @@ Veja também: 08, 12, 14.
 | 2026-11-02 | (e) | A mensagem do backend (`error.message`) tem prioridade sobre a do front; a copy do backend segue esta seção (resolve a ambiguidade 7) |
 | 2026-11-02 | (d) | Aviso de LGPD e de provedor de IA externo na tela de novo currículo; nenhum outro claim de privacidade (resolve as ambiguidades 8 e 9) |
 | 2026-11-02 | (d) | Seção 12.9 aprovada inteira |
+| 2026-11-02 | (d) | Barras do breakdown mostram "N de M com evidência" no lugar do percentual |
 
 **Pendente de aprovação de Pedro Pompeu `(d)`**
 
@@ -1097,7 +1098,7 @@ Veja também: 08, 12, 14.
 | ECHO, ambiguidade 6: aviso de sessão expirada na tela de login | `~superseded 2026-11-02`: resolvido, aviso `(d)` |
 | ECHO, ambiguidades 7 a 9: mensagem do backend sobrescreve a do front; claims de privacidade; provedor de IA | `~superseded 2026-11-02`: 7 confirmada `(e)`; 8 e 9 resolvidas com o aviso de LGPD `(d)` |
 | Seção 12.9 inteira (restrições propostas pela ECHO) | `~superseded 2026-11-02`: aprovada `(d)` |
-| Valor "4 de 6 com evidência" derivado de `requirements[]` no front (MAXWELL) | Confirmar que é aceitável |
+| Valor "4 de 6 com evidência" derivado de `requirements[]` no front (MAXWELL) | `~superseded 2026-11-02`: aprovado `(d)`; conta requisitos do grupo com citação, e o percentual ponderado só define o comprimento |
 
 **Sugestões da NOVA (não são decisões)**
 - Tokenizar `8rem` e o ponto de quebra `40rem` do exemplo de barras (`--size-bar-label`, `--bp-sm`) — MAXWELL.
@@ -1116,3 +1117,4 @@ Veja também: 08, 12, 14.
 | 1.1 | 2026-11-01 | Escolhas de Pedro na prancha visual: fundo Sálvia (7 primitivos novos; canvas, surface, sunken, tinta, linhas); símbolo "Infinito com duas pessoas" com versão reduzida; wordmark "vagafit" em Plex Mono com grifo; Heroicons e três ícones próprios; "Apagar" e "Analisar vaga". Contrastes do claro refeitos. |
 | 1.2 | 2026-11-01 | Símbolo 1a com o desenho da rodada 3 da prancha (fita em duas cores com degradê no cruzamento, vão por máscara, arco aberto preenchido); favicon = símbolo no quadrado petróleo; tokens `--color-logo-you` e `--color-logo-job` (385 variáveis); usos proibidos e contrastes refeitos. Mesma escolha de Pedro (1a + e): a versão sobe para 1.2, e não para MAJOR, porque o símbolo escolhido não mudou, só o desenho. |
 | 1.3 | 2026-11-02 | Ambiguidades 2, 5, 6, 7, 8 e 9 da ECHO resolvidas: nova frase de apoio do score, mensagens de PDF escaneado, sessão expirada e aviso de LGPD na 12.7; seção 12.9 aprovada `(d)`. Continuam abertos: busca no INPI e o "4 de 6 com evidência" (o front mostra percentual). |
+| 1.3.1 | 2026-11-02 | "4 de 6 com evidência" aprovado e aplicado no front (o percentual sai do texto). Resta só a busca no INPI. |

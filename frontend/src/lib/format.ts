@@ -82,6 +82,19 @@ export function formatPercent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
 }
 
+/** Quantos requisitos do grupo têm citação validada (BRAND.md 10, regra 5). */
+export function countWithEvidence(
+  requirements: ReadonlyArray<{ kind: RequirementKind; evidence: readonly unknown[] }>,
+  kind: RequirementKind,
+): { withEvidence: number; total: number } {
+  const group = requirements.filter((r) => r.kind === kind);
+  return { withEvidence: group.filter((r) => r.evidence.length > 0).length, total: group.length };
+}
+
+export function formatEvidenceCount(withEvidence: number, total: number): string {
+  return `${withEvidence} de ${total} com evidência`;
+}
+
 export const KIND_LABELS: Record<RequirementKind, string> = {
   required: "Obrigatório",
   nice_to_have: "Diferencial",
