@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.embeddings import build_embedding_provider
 from app.ai.llm import build_llm_provider
 from app.core.config import get_settings
+from app.core.tracing import flush_tracing
 from app.services.analysis import AnalysisRunner
 from app.services.job_extraction import run_extraction_task
 from app.worker.celery_app import celery_app
@@ -46,4 +47,7 @@ def run_analysis(analysis_id: str, user_id: str) -> str | None:
             await llm.aclose()
             await embeddings.aclose()
 
-    return run_async(job)
+    try:
+        return run_async(job)
+    finally:
+        flush_tracing()  # fora do loop async: o envio ao LangFuse é bloqueante

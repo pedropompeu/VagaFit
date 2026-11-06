@@ -22,7 +22,8 @@ from app.repositories.analyses import AnalysisRepository
 from app.repositories.resumes import ResumeRepository
 from app.repositories.screening import ScreeningRepository
 from app.schemas.screening import LLMScreening, ScreeningRequest
-from app.services.analysis import ANALYSIS_NOT_FOUND, RetrievedContext, check_quote, retrieve
+from app.services.analysis import ANALYSIS_NOT_FOUND, check_quote, retrieve
+from app.services.retrieval import RetrievedContext
 
 logger = structlog.get_logger(__name__)
 

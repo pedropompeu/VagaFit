@@ -49,6 +49,12 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 - Citação: use `app.services.text.quote_in_text` (mesma normalização em todo lugar).
 - Busca vetorial sempre dentro de um currículo do usuário (`ResumeRepository.nearest_chunks`),
   sem índice ANN de propósito.
+- A análise roda num grafo LangGraph (`app/services/analysis_graph.py`, ADR-002). O grafo só
+  orquestra: regra de negócio e validação ficam no código injetado em `AnalysisSteps`. Sem
+  LangChain, sem checkpointer (o estado tem texto de currículo). Nova tentativa é aresta do grafo.
+- Tracing LangFuse (`app/core/tracing.py`): só metadados, a API não aceita `input`/`output`. Todo
+  span novo usa `trace_span`; nunca chamar o SDK do LangFuse direto. Sem chaves é no-op, e os
+  testes nunca ligam o tracing. `flush_tracing()` no fim de toda task do worker.
 
 ## Segurança
 
@@ -74,4 +80,4 @@ Se existir `context/index.md` (memória local da holding, fora do git), leia ant
 
 0. Setup ✅ · 1. Autenticação ✅ · 2. Currículos ✅ · 3. Vagas ✅ · 4. Worker de análise ✅ ·
 5. Triagem ✅ · 6. Candidaturas ✅ · 7. Frontend ✅ (tokens visuais provisórios até o `BRAND.md`) ·
-8. Observabilidade, seed e README ✅.
+8. Observabilidade, seed e README ✅ · 9. LangGraph na análise e LangFuse (metadados) ✅.

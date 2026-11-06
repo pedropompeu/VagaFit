@@ -76,6 +76,14 @@ class Settings(BaseSettings):
     # produção; sem token (desenvolvimento), a rota fica aberta.
     metrics_token: SecretStr | None = None
 
+    # Tracing de IA (LangFuse). Sem as duas chaves fica desligado, e o código roda igual.
+    # Só metadados vão para o LangFuse (tarefa, modelo, tokens, tentativas, erros): nunca
+    # texto de currículo, vaga, prompt nem resposta. Ver `app/core/tracing.py`.
+    langfuse_public_key: SecretStr | None = None
+    langfuse_secret_key: SecretStr | None = None
+    langfuse_host: str = "https://cloud.langfuse.com"
+    langfuse_sample_rate: float = Field(default=1.0, ge=0, le=1)
+
     # Análises
     analysis_top_k_chunks: int = Field(default=3, ge=1, le=10)
     # Análise `pending`/`running` mais velha que isto não é reaproveitada (worker caiu).
@@ -115,6 +123,16 @@ class Settings(BaseSettings):
         if "gemini" in (self.embedding_provider, self.llm_provider) and not self.gemini_api_key:
             raise ValueError("GEMINI_API_KEY é obrigatória com provedor `gemini`.")
         return self
+
+    @model_validator(mode="after")
+    def _check_langfuse(self) -> "Settings":
+        if bool(self.langfuse_public_key) != bool(self.langfuse_secret_key):
+            raise ValueError("LANGFUSE_PUBLIC_KEY e LANGFUSE_SECRET_KEY devem vir juntas.")
+        return self
+
+    @property
+    def langfuse_enabled(self) -> bool:
+        return bool(self.langfuse_public_key) and bool(self.langfuse_secret_key)
 
     def openai_compatible_endpoint(
         self, provider: Literal["openai", "gemini"]

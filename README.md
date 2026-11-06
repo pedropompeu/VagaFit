@@ -87,6 +87,7 @@ flowchart LR
     repos --> pg[("PostgreSQL 16<br/>+ pgvector")]
     worker --> pg
     worker --> llm["LLMProvider<br/>Anthropic · OpenAI · Gemini · fake"]
+    worker -.->|"só metadados"| lf["LangFuse (opcional)"]
     api --> llm
     worker --> emb["EmbeddingProvider<br/>OpenAI · Gemini · fake"]
 ```
@@ -117,7 +118,7 @@ sequenceDiagram
 ```
 
 **Stack:** Python 3.12, FastAPI, Pydantic v2, SQLAlchemy 2 async + asyncpg, Alembic,
-PostgreSQL 16 + pgvector, Celery + Redis 7, PyJWT + argon2, structlog,
+PostgreSQL 16 + pgvector, Celery + Redis 7, LangGraph, LangFuse, PyJWT + argon2, structlog,
 prometheus-fastapi-instrumentator, React 18, Vite, TypeScript, React Router, TanStack Query,
 Axios e Tailwind. Mais detalhes em
 [`docs/adr/ADR-001-stack-e-arquitetura.md`](docs/adr/ADR-001-stack-e-arquitetura.md).
@@ -190,6 +191,32 @@ Gemini e `fake`. O Gemini usa o endpoint compatível com OpenAI do Google pelo m
 recusa em produção. Nenhum teste chama API externa, e o retry com backoff tem o `sleep`
 injetável para ser testado.
 
+### Orquestração com LangGraph
+
+O worker executa a análise como um grafo (`app/services/analysis_graph.py`). A nova tentativa
+com o erro de validação no prompt é uma aresta do grafo, não um laço escondido:
+
+```mermaid
+flowchart LR
+    S((início)) --> extract --> retrieve --> analyze
+    analyze -->|saída válida| build --> E((fim))
+    analyze -->|inválida, 1ª vez| analyze
+    analyze -->|inválida de novo| reject["reject<br/>(failed)"] --> E
+```
+
+O grafo só orquestra: a busca vetorial, a validação de evidência e o score continuam em código
+de domínio, injetado nos nós, e o LLM segue atrás do `LLMProvider` (sem LangChain). Não há
+checkpointer de propósito, porque o estado carrega trechos do currículo. Ver
+[`ADR-002`](docs/adr/ADR-002-langgraph-e-langfuse.md).
+
+### Traces com LangFuse (só metadados)
+
+Com `LANGFUSE_PUBLIC_KEY` e `LANGFUSE_SECRET_KEY`, cada análise vira um trace: um span por nó do
+grafo e uma geração por chamada de LLM, com modelo, versão do prompt, tentativa, tokens, status
+e nome do erro. A API de tracing não aceita prompt nem resposta, e o cliente descarta qualquer
+texto longo que escape. Nenhum texto de currículo ou vaga sai do servidor. Sem as chaves, o
+tracing é no-op e a aplicação roda igual.
+
 ### Logs e métricas sem dado pessoal
 
 Os logs são JSON, gerados pelo structlog. Um processor (`redact_sensitive`) troca por
@@ -245,6 +272,8 @@ completo fica em `/docs`.
 - [x] Testes de componente no front (Vitest).
 - [ ] Testes e2e no front.
 - [x] `/metrics` protegido por token (`METRICS_TOKEN`).
+- [x] Análise orquestrada com LangGraph e traces no LangFuse, só com metadados.
+- [ ] Eval harness (golden set, datasets e scores no LangFuse).
 - [ ] Métricas do worker (exporter próprio).
 - [ ] Ler a vaga a partir de uma URL e extensão de navegador.
 - [ ] Recuperação de senha e verificação de e-mail.
