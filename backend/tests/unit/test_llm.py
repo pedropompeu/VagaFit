@@ -192,7 +192,8 @@ async def test_anthropic_truncated_output_becomes_retry_in_structured_call() -> 
 
 def _openai_response(content: str | None, refusal: str | None = None) -> Any:
     message = SimpleNamespace(content=content, refusal=refusal)
-    return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+    usage = SimpleNamespace(prompt_tokens=10, completion_tokens=5)
+    return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=usage)
 
 
 def _openai(outcomes: list[Any]) -> tuple[OpenAILLMProvider, _Calls]:

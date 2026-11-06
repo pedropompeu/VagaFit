@@ -26,6 +26,7 @@ from app.ai.errors import (
 )
 from app.ai.retry import retry_with_backoff
 from app.core.config import Settings
+from app.core.tracing import record_usage, trace_span
 
 logger = structlog.get_logger(__name__)
 
@@ -80,6 +81,41 @@ def _validation_problems(exc: ValidationError) -> list[str]:
     ][:10]
 
 
+MAX_OUTPUT_ATTEMPTS = 2
+
+
+async def structured_attempt[M: BaseModel](
+    provider: LLMProvider,
+    request: LLMRequest,
+    output: type[M],
+    validate: Callable[[M], list[str]] | None = None,
+    *,
+    attempt: int = 1,
+) -> tuple[M | None, list[str]]:
+    """Uma chamada ao LLM + validação. `(saída, [])` se passou; `(None, problemas)` se não.
+
+    É a peça que `structured_call` repete e que o grafo da análise usa como nó, para que o
+    ciclo de nova tentativa fique visível (e rastreável) como aresta do grafo. Cada chamada
+    vira uma geração no LangFuse, só com metadados (tarefa, modelo, tentativa, tokens).
+    """
+    with trace_span(
+        f"llm.{request.task}", generation=True, model=provider.model, attempt=attempt
+    ) as span:
+        raw = await provider.complete_json(request)
+        parsed: M | None = None
+        try:
+            parsed = output.model_validate_json(raw)
+        except ValidationError as exc:
+            problems = _validation_problems(exc)
+        else:
+            problems = validate(parsed) if validate else []
+        if problems:
+            span.update(valid=False, problems=len(problems))
+            return None, problems
+        span.update(valid=True)
+        return parsed, []
+
+
 async def structured_call[M: BaseModel](
     provider: LLMProvider,
     request: LLMRequest,
@@ -88,17 +124,13 @@ async def structured_call[M: BaseModel](
 ) -> M:
     """Chama o LLM, valida e tenta uma segunda vez com o erro no prompt."""
     problems: list[str] = []
-    for attempt in (1, 2):
+    for attempt in range(1, MAX_OUTPUT_ATTEMPTS + 1):
         current = request if attempt == 1 else request.with_feedback(problems)
-        raw = await provider.complete_json(current)
-        try:
-            parsed = output.model_validate_json(raw)
-        except ValidationError as exc:
-            problems = _validation_problems(exc)
-        else:
-            problems = validate(parsed) if validate else []
-            if not problems:
-                return parsed
+        parsed, problems = await structured_attempt(
+            provider, current, output, validate, attempt=attempt
+        )
+        if parsed is not None:
+            return parsed
         logger.warning(
             "llm_output_rejected", task=request.task, attempt=attempt, problems=len(problems)
         )
@@ -168,6 +200,10 @@ class AnthropicLLMProvider(_BaseProvider):
                 input_tokens=response.usage.input_tokens,
                 output_tokens=response.usage.output_tokens,
                 stop_reason=response.stop_reason,
+            )
+            record_usage(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
             )
             if response.stop_reason == "refusal":
                 raise AIProviderError("O modelo recusou a solicitação.")
@@ -244,6 +280,11 @@ class OpenAILLMProvider(_BaseProvider):
                     raise RetryableAIError(f"status {exc.status_code}") from exc
                 logger.error("llm_request_rejected", task=request.task, status=exc.status_code)
                 raise AIProviderError() from exc
+            if response.usage is not None:
+                record_usage(
+                    input_tokens=response.usage.prompt_tokens,
+                    output_tokens=response.usage.completion_tokens,
+                )
             choice = response.choices[0]
             if choice.message.refusal:
                 raise AIProviderError("O modelo recusou a solicitação.")

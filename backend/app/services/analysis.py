@@ -19,11 +19,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embeddings import EmbeddingProvider
 from app.ai.errors import AIProviderError, AIQuotaExceededError
-from app.ai.llm import LLMOutputError, LLMProvider, structured_call
+from app.ai.llm import LLMOutputError, LLMProvider, LLMRequest
 from app.ai.prompts import PROMPT_VERSION, analyze_fit_request
 from app.core.config import Settings
 from app.core.errors import NotFoundError
 from app.core.metrics import ANALYSES_REQUESTED
+from app.core.tracing import annotate, trace_span
 from app.models.analysis import Analysis
 from app.models.mixins import utcnow
 from app.models.resume import ResumeChunk
@@ -41,9 +42,11 @@ from app.schemas.analysis import (
     Suggestion,
 )
 from app.schemas.extraction import JobExtraction
+from app.services.analysis_graph import AnalysisSteps, MissingInputError, build_analysis_graph
 from app.services.job_extraction import ensure_extracted
 from app.services.jobs import JOB_NOT_FOUND
 from app.services.resumes import RESUME_NOT_FOUND
+from app.services.retrieval import RetrievedContext as RetrievedContext
 from app.services.scoring import compute_score
 from app.services.text import quote_in_text
 from app.worker.queue import RUN_ANALYSIS_TASK, TaskQueue
@@ -142,14 +145,6 @@ class AnalysisService:
 
 
 # --- worker ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class RetrievedContext:
-    """O que foi mandado ao LLM: alias -> chunk, e candidatos por item (requisito ou pergunta)."""
-
-    chunks: dict[str, ResumeChunk]
-    candidates: dict[str, list[str]]
 
 
 async def retrieve(
@@ -270,6 +265,16 @@ def build_result(
     )
 
 
+def _analysis_request(extraction: JobExtraction, ctx: RetrievedContext) -> LLMRequest:
+    return analyze_fit_request(
+        [
+            {"id": r.id, "text": r.text, "kind": r.kind, "candidates": ctx.candidates[r.id]}
+            for r in extraction.requirements
+        ],
+        {alias: chunk.content for alias, chunk in ctx.chunks.items()},
+    )
+
+
 class AnalysisRunner:
     """Lado do worker. Testável com sessão de teste e provedores falsos."""
 
@@ -290,6 +295,17 @@ class AnalysisRunner:
 
     async def run(self, analysis_id: uuid.UUID) -> str | None:
         """Executa e devolve o status final (`None` se a análise não existe)."""
+        with trace_span(
+            "analysis.run",
+            analysis_id=str(analysis_id),
+            llm_model=self._llm.model,
+            prompt_version=PROMPT_VERSION,
+        ) as span:
+            status = await self._run(analysis_id)
+            span.update(status=status or "missing")
+            return status
+
+    async def _run(self, analysis_id: uuid.UUID) -> str | None:
         analysis = await self._repo.get(analysis_id)
         if analysis is None:
             logger.warning("analysis.missing", analysis_id=str(analysis_id))
@@ -308,7 +324,7 @@ class AnalysisRunner:
         except LLMOutputError as exc:
             log.warning("analysis.invalid_output", task=exc.task, problems=len(exc.problems))
             return await self._fail(analysis_id, MSG_INVALID_OUTPUT, "invalid_output")
-        except _MissingInputError:
+        except MissingInputError:
             return await self._fail(analysis_id, MSG_MISSING_INPUT, "missing_input")
         except Exception as exc:
             log.error("analysis.crashed", error=type(exc).__name__)
@@ -329,26 +345,29 @@ class AnalysisRunner:
         return "done"
 
     async def _analyze(self, analysis: Analysis) -> AnalysisResult:
-        extraction = await ensure_extracted(
-            self._session, self._user_id, analysis.job_id, self._llm
+        """Roda o grafo: extrair -> recuperar -> analisar (com nova tentativa) -> montar."""
+        job_id, resume_id = analysis.job_id, analysis.resume_id
+        llm = self._llm
+        graph = build_analysis_graph(
+            AnalysisSteps(
+                llm=llm,
+                extract=lambda: ensure_extracted(self._session, self._user_id, job_id, llm),
+                retrieve=lambda extraction: self._retrieve(resume_id, extraction),
+                make_request=_analysis_request,
+                validate=lambda extraction, ctx, output: _Validator(extraction, ctx)(output),
+                build=lambda extraction, ctx, output: build_result(
+                    extraction, ctx, output, llm.model
+                ),
+            )
         )
-        if extraction is None:
-            raise _MissingInputError
-        ctx = await self._retrieve(analysis.resume_id, extraction)
-        request = analyze_fit_request(
-            [
-                {"id": r.id, "text": r.text, "kind": r.kind, "candidates": ctx.candidates[r.id]}
-                for r in extraction.requirements
-            ],
-            {alias: chunk.content for alias, chunk in ctx.chunks.items()},
-        )
-        output = await structured_call(self._llm, request, LLMAnalysis, _Validator(extraction, ctx))
-        return build_result(extraction, ctx, output, self._llm.model)
+        final = await graph.ainvoke({"attempt": 0})
+        result: AnalysisResult = final["result"]
+        return result
 
     async def _retrieve(self, resume_id: uuid.UUID, extraction: JobExtraction) -> RetrievedContext:
         resumes = ResumeRepository(self._session, self._user_id)
         if await resumes.get(resume_id) is None:
-            raise _MissingInputError
+            raise MissingInputError
         return await retrieve(
             resumes,
             self._embeddings,
@@ -367,8 +386,5 @@ class AnalysisRunner:
         analysis.finished_at = utcnow()
         await self._session.commit()
         logger.warning("analysis.failed", analysis_id=str(analysis_id), reason=reason)
+        annotate(level="ERROR", status_message=reason, reason=reason)
         return "failed"
-
-
-class _MissingInputError(Exception):
-    """Currículo ou vaga apagados entre o pedido e a execução."""

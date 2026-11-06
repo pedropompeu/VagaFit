@@ -7,9 +7,12 @@ os.environ.setdefault("RATE_LIMIT_STORAGE_URL", "memory://")
 # Provedores falsos sempre: nenhum teste chama API externa, mesmo com chave no `.env`.
 os.environ["EMBEDDING_PROVIDER"] = "fake"
 os.environ["LLM_PROVIDER"] = "fake"
-# Chaves e ajustes de provedor do `.env` (modelo, URL) também ficam de fora: os testes
+# Chaves e ajustes de provedor do `.env` (modelo, URL) e do LangFuse (tracing sempre desligado
+# nos testes) também ficam de fora: os testes
 # esperam os padrões do código, e os de validação dependem da ausência da chave.
-for _name in [n for n in os.environ if n.startswith(("OPENAI_", "ANTHROPIC_", "GEMINI_"))]:
+for _name in [
+    n for n in os.environ if n.startswith(("OPENAI_", "ANTHROPIC_", "GEMINI_", "LANGFUSE_"))
+]:
     del os.environ[_name]
 
 from collections.abc import AsyncIterator, Iterator
