@@ -15,14 +15,15 @@ currículo, mostra de onde tirou cada conclusão e devolve as lacunas como lacun
 
 ## Demo
 
-> 🎬 _GIF da demo: em breve._ <!-- TODO: gravar o fluxo seed → análise → triagem → candidatura -->
+![Fluxo da demo: currículo, vaga, análise, triagem e candidatura](docs/demo.gif)
 
 O fluxo de ponta a ponta:
 
 1. **Currículo:** envie um PDF ou cole o texto. Antes de salvar, dá para conferir como ele foi
    dividido em trechos.
 2. **Vaga:** cole o anúncio. O worker extrai cargo, senioridade, modelo de trabalho, stack,
-   requisitos obrigatórios e diferenciais.
+   requisitos obrigatórios e diferenciais. Se a IA não conseguir extrair os requisitos, a vaga
+   aparece como **"Falha na extração"**, com o botão **"Tentar de novo"**.
 3. **Análise:** um score de 0 a 100, com cada requisito marcado como *Atende*, *Atende em
    parte* ou *Não atende*. Ao lado de cada veredito vem a citação literal do currículo, e um
    clique abre o trecho completo. Também mostra as lacunas e sugestões de reescrita que só
@@ -68,6 +69,9 @@ Depois de mudar o `.env`, rode `docker compose up -d --force-recreate api worker
 | `make test-unit` | Roda só os testes que não precisam de banco. |
 | `make lint` | Roda ruff, mypy strict e o typecheck do front. |
 | `make logs` | Acompanha os logs da api e do worker. |
+
+Para usar LangFuse (traces e scores da avaliação), preencha `LANGFUSE_PUBLIC_KEY`,
+`LANGFUSE_SECRET_KEY` e `LANGFUSE_HOST` no `.env`. Sem as chaves, o tracing fica desligado.
 
 ## Arquitetura
 
@@ -209,6 +213,13 @@ de domínio, injetado nos nós, e o LLM segue atrás do `LLMProvider` (sem LangC
 checkpointer de propósito, porque o estado carrega trechos do currículo. Ver
 [`ADR-002`](docs/adr/ADR-002-langgraph-e-langfuse.md).
 
+### Falha de extração é um estado, não uma lista vazia
+
+Se a extração da vaga falha, o registro guarda o erro (`extraction_error`) e a vaga fica
+marcada como falha. Ela não vira uma vaga "sem requisitos", porque isso levaria a um score
+enganoso. O front mostra o alerta com "Tentar de novo", que reenfileira a extração só quando a
+vaga ainda não foi extraída (`POST /jobs/{id}/extract`).
+
 ### Traces com LangFuse (só metadados)
 
 Com `LANGFUSE_PUBLIC_KEY` e `LANGFUSE_SECRET_KEY`, cada análise vira um trace: um span por nó do
@@ -245,6 +256,7 @@ completo fica em `/docs`.
 | GET · DELETE | `/resumes/{id}` | Detalhar com os trechos · apagar |
 | GET · POST | `/jobs` | Listar · cadastrar vaga (a extração roda no worker) |
 | GET · DELETE | `/jobs/{id}` | Detalhar com os requisitos extraídos · apagar |
+| POST | `/jobs/{id}/extract` | Tentar a extração de novo (202), quando ela falhou |
 | GET · POST | `/analyses` | Listar (`?job_id=`) · pedir análise (202, com cache por hash) |
 | GET | `/analyses/{id}` | Status e resultado |
 | GET · POST | `/analyses/{id}/screening` | Listar · gerar rascunhos de triagem |
@@ -265,15 +277,37 @@ completo fica em `/docs`.
 - **CI:** a cada push, o GitHub Actions roda no backend lint, mypy, migrações e testes com
   Postgres + pgvector, e no front o typecheck, os testes e o build.
 
+## Avaliação da IA
+
+O golden set (`backend/evals/golden_set.json`) tem casos fictícios, cada um com um currículo, uma
+vaga e o veredito esperado por requisito. O runner (`backend/evals/run.py`) passa cada caso pela
+mesma extração, busca de trechos e validação de saída da aplicação, e mede dois números:
+
+- **acerto de veredito:** quantos requisitos receberam o veredito esperado;
+- **saídas inválidas:** casos em que a validação de honestidade reprovou a saída nas duas
+  tentativas. Qualquer saída inválida faz o comando terminar com código 1.
+
+```bash
+docker compose run --rm --no-deps api python -m evals.run
+```
+
+Com `LLM_PROVIDER=fake` (o padrão), o número mostra só que o pipeline funciona e serve de
+regressão. Ele não mede qualidade. A medida real precisa de um provedor de verdade. Com as
+chaves do LangFuse configuradas, o runner também envia o golden set como dataset
+(`vagafit-golden-set`) e um trace `eval.case` por caso, com os scores `verdict_accuracy` e
+`valid_output`. Os scores ainda não estão ligados a uma execução de dataset.
+
 ## Roadmap
 
 - [ ] Identidade visual própria (hoje os tokens de cor e espaçamento são provisórios).
-- [ ] GIF da demo e deploy público com cota diária por conta.
+- [x] GIF da demo no README.
+- [ ] Deploy público com cota diária por conta.
 - [x] Testes de componente no front (Vitest).
 - [ ] Testes e2e no front.
 - [x] `/metrics` protegido por token (`METRICS_TOKEN`).
 - [x] Análise orquestrada com LangGraph e traces no LangFuse, só com metadados.
-- [ ] Eval harness (golden set, datasets e scores no LangFuse).
+- [x] Eval harness offline: golden set, acerto de veredito e scores no LangFuse.
+- [ ] Eval com provedor real e execuções de dataset no LangFuse.
 - [ ] Métricas do worker (exporter próprio).
 - [ ] Ler a vaga a partir de uma URL e extensão de navegador.
 - [ ] Recuperação de senha e verificação de e-mail.
