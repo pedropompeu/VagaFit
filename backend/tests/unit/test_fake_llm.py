@@ -73,3 +73,27 @@ def test_met_verdict_is_supported_by_its_own_quote() -> None:
     # "Docker" só aparece na lista de habilidades; a citação precisa conter a palavra.
     docker_quote = verdicts["R4"]["evidence"][0]["quote"]
     assert "Docker" in docker_quote
+
+
+JOB_ONE_PARAGRAPH = (
+    "Pessoa Desenvolvedora Backend Python Requisitos: experiência com Python e FastAPI; "
+    "banco relacional (PostgreSQL); testes automatizados; Docker. Diferencial: React e "
+    "TypeScript. Sobre a vaga: time de produto em remoto, foco em APIs de alta disponibilidade."
+)
+
+
+def test_one_paragraph_job_yields_requirements_that_pass_the_schema() -> None:
+    """Regressão: vaga sem quebra de linha ficava sem requisitos e a extração era rejeitada."""
+    from app.ai.fake_llm import extract_requirements
+    from app.schemas.extraction import LLMJobExtraction
+
+    out = extract_requirements(SimpleNamespace(payload={"job_text": JOB_ONE_PARAGRAPH}))
+    parsed = LLMJobExtraction.model_validate(out)
+
+    texts = [r.text for r in parsed.requirements]
+    assert "banco relacional (PostgreSQL)" in texts
+    assert all(len(t) <= 300 for t in texts)
+    assert not any(t.startswith("Pessoa Desenvolvedora") for t in texts)  # título fora
+    assert not any("Sobre a vaga" in t for t in texts)  # descrição fora
+    diff = [r for r in parsed.requirements if r.text == "React e TypeScript"]
+    assert [r.kind for r in diff] == ["nice_to_have"]

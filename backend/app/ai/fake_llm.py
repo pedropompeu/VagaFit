@@ -97,6 +97,30 @@ def _work_model(text: str) -> str:
     return "unspecified"
 
 
+def _sentence_requirements(lines: list[str]) -> list[dict[str, str]]:
+    """Sem marcadores: cada frase vira um requisito, na ordem do texto.
+
+    Vaga colada em um parágrafo só não tem quebra de linha; a primeira linha é o título
+    quando há mais de uma. Frase longa é cortada em 300 caracteres (limite do schema).
+    """
+    body = " ".join(lines[1:] if len(lines) > 1 else lines)
+    marker = re.search(r"Requisitos?:", body)
+    if marker:  # tudo antes de "Requisitos:" é título ou cabeçalho, não requisito
+        body = body[marker.start() :]
+    found: list[dict[str, str]] = []
+    for sentence in re.split(r"(?<=[.;!?])\s+|\s+(?=Requisitos?:|Diferencial:)", body):
+        cleaned = sentence.strip().rstrip(".;!?").removeprefix("Requisitos:").strip()
+        if len(cleaned) < 3 or _key(cleaned).startswith("sobre a vaga"):
+            continue
+        kind = "required"
+        if _key(cleaned).startswith("diferencial"):
+            kind = "nice_to_have"
+            cleaned = cleaned.split(":", 1)[-1].strip()
+        if len(cleaned) >= 3:
+            found.append({"text": cleaned[:300], "kind": kind})
+    return found[:10]
+
+
 def extract_requirements(request: LLMRequest) -> dict[str, Any]:
     text: str = request.payload["job_text"]
     lines = [line.strip() for line in text.split("\n") if line.strip()]
@@ -112,7 +136,7 @@ def extract_requirements(request: LLMRequest) -> dict[str, Any]:
             continue
         requirements.append({"text": _BULLET.sub("", line)[:300], "kind": kind})
     if not requirements:
-        requirements = [{"text": line[:300], "kind": "required"} for line in lines[1:11]]
+        requirements = _sentence_requirements(lines)
     company = next(
         (line.split(":", 1)[1].strip() for line in lines if _key(line).startswith("empresa:")),
         None,
