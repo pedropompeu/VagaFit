@@ -21,6 +21,7 @@ from typing import Any
 
 from app.ai.llm import LLMOutputError, LLMProvider, build_llm_provider, structured_call
 from app.core.config import get_settings
+from app.core.tracing import langfuse_client
 from app.models.resume import ResumeChunk
 from app.schemas.analysis import LLMAnalysis
 from app.services.analysis import _analysis_request, _Validator
@@ -100,13 +101,52 @@ def _print_report(results: list[CaseResult], provider: str) -> None:
     )
 
 
+DATASET_NAME = "vagafit-golden-set"
+
+
+def publish(
+    client: Any, cases: list[dict[str, Any]], results: list[CaseResult], provider: str
+) -> None:
+    """Envia o golden set como dataset e um trace por caso, com os scores da avaliação.
+
+    Os itens usam o `id` do caso, então reenviar atualiza em vez de duplicar. Os scores ficam
+    nos traces `eval.case`, não ligados a uma execução de dataset: é o primeiro passo do ADR-002.
+    """
+    client.create_dataset(
+        name=DATASET_NAME,
+        description="Golden set do VagaFit: vereditos esperados por requisito (dados fictícios).",
+    )
+    for case in cases:
+        client.create_dataset_item(
+            dataset_name=DATASET_NAME,
+            id=case["id"],
+            input={"resume": case["resume"], "job": case["job"]},
+            expected_output=case["expected"],
+        )
+    for r in results:
+        with client.start_as_current_observation(
+            name="eval.case", as_type="span", metadata={"case_id": r.case_id, "provider": provider}
+        ):
+            client.score_current_trace(
+                name="verdict_accuracy", value=r.hits / r.total if r.total else 0.0
+            )
+            client.score_current_trace(name="valid_output", value=1.0 if r.valid else 0.0)
+    client.flush()
+
+
 async def main() -> int:
-    llm = build_llm_provider(get_settings())
+    settings = get_settings()
+    llm = build_llm_provider(settings)
+    cases = load_cases()
     try:
-        results = [await run_case(llm, case) for case in load_cases()]
+        results = [await run_case(llm, case) for case in cases]
     finally:
         await llm.aclose()
     _print_report(results, llm.model)
+    client = langfuse_client()
+    if client is not None:
+        publish(client, cases, results, llm.model)
+        print("Resultados enviados ao LangFuse (dataset vagafit-golden-set).")
     return 1 if any(not r.valid for r in results) else 0
 
 

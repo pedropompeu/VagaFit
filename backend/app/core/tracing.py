@@ -123,6 +123,11 @@ def _get_client() -> Any | None:
         return _client
 
 
+def langfuse_client() -> Any | None:
+    """Cliente compartilhado, para uso fora dos spans da app (ex.: avaliação). `None` sem chaves."""
+    return _get_client()
+
+
 def reset_tracing() -> None:
     """Esquece o cliente (testes e reinício de processo)."""
     global _client, _initialized
