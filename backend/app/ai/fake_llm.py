@@ -18,6 +18,8 @@ Handler = Callable[[LLMRequest], dict[str, Any]]
 _BULLET = re.compile(r"^\s*(?:[-•*▪◦·]|\d+[.)])\s+")
 _NICE = ("diferencia", "desejave", "nice to have", "plus", "bonus", "seria um")
 _REQUIRED = ("requisito", "obrigator", "requirement", "must have", "qualifica", "exigi")
+# Mesmo limite de `quote` e `original` em app/schemas/analysis.py (max_length=400).
+_QUOTE_MAX = 400
 
 KNOWN_TECH = (
     "Python",
@@ -226,15 +228,37 @@ def analyze_fit(request: LLMRequest) -> dict[str, Any]:
     return {"verdicts": verdicts, "suggestions": suggestions}
 
 
+def _segments(line: str) -> list[str]:
+    """Pedaços literais de uma linha, cada um com no máximo `_QUOTE_MAX` caracteres.
+
+    Linha curta vira ela mesma. Linha longa (currículo colado em um parágrafo só) quebra
+    em frases; frase ainda grande é cortada em prefixos, sempre por espaço. Todo pedaço é
+    substring da linha, então a citação continua passando na validação literal.
+    """
+    if len(line) <= _QUOTE_MAX:
+        return [line]
+    pieces: list[str] = []
+    for sentence in re.split(r"(?<=[.;!?])\s+", line):
+        while len(sentence) > _QUOTE_MAX:
+            cut = sentence[:_QUOTE_MAX].rsplit(" ", 1)[0] or sentence[:_QUOTE_MAX]
+            pieces.append(cut)
+            sentence = sentence[len(cut) :].lstrip()
+        if sentence:
+            pieces.append(sentence)
+    return pieces
+
+
 def _best_line(
     keywords: list[str], chunks: dict[str, str], aliases: list[str]
 ) -> tuple[int, str, str] | None:
+    """Melhor pedaço (linha ou frase) do currículo para as palavras-chave."""
     best: tuple[int, str, str] | None = None
     for alias in aliases:
         for line in chunks[alias].split("\n"):
-            hits = _hits(keywords, line) if keywords else 0
-            if hits and (best is None or hits > best[0]):
-                best = (hits, alias, line.strip())
+            for piece in _segments(line.strip()):
+                hits = _hits(keywords, piece) if keywords else 0
+                if hits and (best is None or hits > best[0]):
+                    best = (hits, alias, piece.strip())
     return best
 
 
