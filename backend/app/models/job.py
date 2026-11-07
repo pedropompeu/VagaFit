@@ -21,3 +21,5 @@ class Job(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
     company: Mapped[str | None] = mapped_column(String(160))
     raw_text: Mapped[str] = mapped_column(Text)
     extracted: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    # Motivo curto da última falha de extração; nulo quando não falhou (ou quando deu certo).
+    extraction_error: Mapped[str | None] = mapped_column(String(200))

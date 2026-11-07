@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { deleteJob, getJob } from "../api/jobs";
+import { deleteJob, getJob, retryJobExtraction } from "../api/jobs";
 import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -58,6 +58,14 @@ export function JobDetailPage() {
 
   usePageTitle(job?.title ?? "Vaga");
 
+  const retryMutation = useMutation({
+    mutationFn: (id: string) => retryJobExtraction(id),
+    onSuccess: () => {
+      if (jobId) void queryClient.invalidateQueries({ queryKey: ["jobs", jobId] });
+      void queryClient.invalidateQueries({ queryKey: ["jobs"], exact: true });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: deleteJob,
     onSuccess: () => {
@@ -97,6 +105,7 @@ export function JobDetailPage() {
   const niceToHave = extracted?.requirements.filter((item) => item.kind === "nice_to_have") ?? [];
   const company = job.company ?? extracted?.company ?? "Empresa não informada";
   const isPending = job.extraction_status === "pending";
+  const isFailed = job.extraction_status === "failed";
 
   return (
     <>
@@ -126,7 +135,30 @@ export function JobDetailPage() {
           </Alert>
         ) : null}
 
-        {!isPending && !extracted ? (
+        {isFailed ? (
+          <Alert variant="error" title="Não foi possível extrair os requisitos">
+            <div className="mt-2xs flex flex-col items-start gap-xs">
+              <span>
+                A IA não conseguiu ler esta vaga. O texto continua salvo; tente de novo.
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={retryMutation.isPending}
+                onClick={() => {
+                  if (jobId) retryMutation.mutate(jobId);
+                }}
+              >
+                {retryMutation.isPending ? "Tentando…" : "Tentar de novo"}
+              </Button>
+              {retryMutation.isError ? (
+                <span>{getApiErrorMessage(retryMutation.error)}</span>
+              ) : null}
+            </div>
+          </Alert>
+        ) : null}
+
+        {!isPending && !isFailed && !extracted ? (
           <Alert variant="warning">
             A extração terminou, mas nenhum requisito foi retornado para esta vaga.
           </Alert>

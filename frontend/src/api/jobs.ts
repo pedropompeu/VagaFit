@@ -22,6 +22,11 @@ export async function createJob(input: CreateJobInput): Promise<JobSummary> {
   return data;
 }
 
+export async function retryJobExtraction(id: string): Promise<JobSummary> {
+  const { data } = await api.post<JobSummary>(`/jobs/${id}/extract`);
+  return data;
+}
+
 export async function deleteJob(id: string): Promise<void> {
   await api.delete(`/jobs/${id}`);
 }

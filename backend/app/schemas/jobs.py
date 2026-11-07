@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.extraction import JobExtraction
 
-ExtractionStatus = Literal["pending", "done"]
+ExtractionStatus = Literal["pending", "done", "failed"]
 
 JOB_TEXT_MAX_CHARS = 30_000
 
@@ -35,7 +35,10 @@ class JobRead(BaseModel):
     company: str | None
     created_at: datetime
     extraction_status: ExtractionStatus = Field(
-        description="`pending` até o worker extrair os requisitos; `done` depois."
+        description=(
+            "`pending` até o worker extrair os requisitos; `done` depois; `failed` quando a "
+            "IA não conseguiu extrair (tente de novo com `POST /jobs/{id}/extract`)."
+        )
     )
 
 

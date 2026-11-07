@@ -43,7 +43,7 @@ export interface ResumePreview {
   chunks: ResumePreviewChunk[];
 }
 
-export type ExtractionStatus = "pending" | "done";
+export type ExtractionStatus = "pending" | "done" | "failed";
 
 export interface JobSummary {
   id: string;

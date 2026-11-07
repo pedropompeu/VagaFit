@@ -146,3 +146,57 @@ async def test_delete(client: AsyncClient, user_a: AuthedUser) -> None:
     assert (await client.delete(url, headers=user_a.headers)).status_code == 204
     assert (await client.get(url, headers=user_a.headers)).status_code == 404
     assert (await client.delete(url, headers=user_a.headers)).status_code == 404
+
+
+async def test_failed_extraction_is_visible_and_retry_requeues(
+    client: AsyncClient, user_a: AuthedUser, db_session: AsyncSession, task_queue: InMemoryTaskQueue
+) -> None:
+    created = await _create(client, user_a)
+    job_id = uuid.UUID(created["id"])
+
+    def broken(request: LLMRequest) -> dict:
+        raise AIProviderError()
+
+    assert not await run_extraction_task(
+        db_session, user_a.id, job_id, FakeLLMProvider(handlers={"extract_requirements": broken})
+    )
+    detail = (await client.get(f"/api/v1/jobs/{job_id}", headers=user_a.headers)).json()
+    assert detail["extraction_status"] == "failed"
+    assert detail["extracted"] is None
+
+    retry = await client.post(f"/api/v1/jobs/{job_id}/extract", headers=user_a.headers)
+    assert retry.status_code == 202
+    assert retry.json()["extraction_status"] == "pending"
+    assert task_queue.sent[-1] == (EXTRACT_JOB_TASK, (str(job_id), str(user_a.id)))
+
+    assert await run_extraction_task(db_session, user_a.id, job_id, FakeLLMProvider())
+    job = await JobRepository(db_session, user_a.id).get(job_id)
+    assert job is not None
+    assert job.extraction_error is None
+    detail = (await client.get(f"/api/v1/jobs/{job_id}", headers=user_a.headers)).json()
+    assert detail["extraction_status"] == "done"
+
+
+async def test_retry_on_extracted_job_changes_nothing(
+    client: AsyncClient, user_a: AuthedUser, db_session: AsyncSession, task_queue: InMemoryTaskQueue
+) -> None:
+    created = await _create(client, user_a)
+    job_id = uuid.UUID(created["id"])
+    assert await run_extraction_task(db_session, user_a.id, job_id, FakeLLMProvider())
+    sent_before = len(task_queue.sent)
+
+    retry = await client.post(f"/api/v1/jobs/{job_id}/extract", headers=user_a.headers)
+
+    assert retry.status_code == 202
+    assert retry.json()["extraction_status"] == "done"
+    assert len(task_queue.sent) == sent_before
+
+
+async def test_retry_of_other_users_job_is_not_found(
+    client: AsyncClient, user_a: AuthedUser, user_b: AuthedUser
+) -> None:
+    job_id = (await _create(client, user_a))["id"]
+
+    response = await client.post(f"/api/v1/jobs/{job_id}/extract", headers=user_b.headers)
+
+    assert response.status_code == 404

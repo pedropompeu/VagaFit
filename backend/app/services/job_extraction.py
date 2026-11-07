@@ -19,6 +19,9 @@ from app.services.text import normalize_for_match
 
 logger = structlog.get_logger(__name__)
 
+# Mensagem fixa gravada em `jobs.extraction_error`: nunca traz texto da vaga nem do LLM.
+EXTRACTION_FAILED_MESSAGE = "A IA não conseguiu extrair os requisitos desta vaga."
+
 
 def _check_extraction(extraction: LLMJobExtraction) -> list[str]:
     problems = []
@@ -67,7 +70,13 @@ async def ensure_extracted(
         return None
     if job.extracted is not None:
         return JobExtraction.model_validate(job.extracted)
-    extraction = await extract_requirements(llm, job.raw_text)
+    try:
+        extraction = await extract_requirements(llm, job.raw_text)
+    except (LLMOutputError, AIProviderError) as exc:
+        await repo.set_extraction_error(job, EXTRACTION_FAILED_MESSAGE)
+        await session.commit()
+        logger.warning("job.extraction_failed", job_id=str(job_id), error=type(exc).__name__)
+        raise
     await _save(repo, job, extraction)
     await session.commit()
     logger.info(
@@ -87,9 +96,8 @@ async def run_extraction_task(
     session: AsyncSession, user_id: uuid.UUID, job_id: uuid.UUID, llm: LLMProvider
 ) -> bool:
     """Corpo da task `vagafit.extract_job`. Falha de IA não derruba o worker: a vaga fica
-    `pending` e a análise tenta extrair de novo quando for pedida."""
+    `failed` (com o motivo gravado) e a análise tenta extrair de novo quando for pedida."""
     try:
         return await ensure_extracted(session, user_id, job_id, llm) is not None
-    except (LLMOutputError, AIProviderError) as exc:
-        logger.warning("job.extraction_failed", job_id=str(job_id), error=type(exc).__name__)
+    except (LLMOutputError, AIProviderError):
         return False

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { deleteJob, listJobs } from "../api/jobs";
 import { Alert } from "../components/ui/Alert";
-import { Badge } from "../components/ui/Badge";
+import { Badge, type BadgeTone } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
@@ -17,7 +17,19 @@ import { Spinner } from "../components/ui/Spinner";
 import { getApiErrorMessage } from "../lib/errors";
 import { formatDateTime } from "../lib/format";
 import { usePageTitle } from "../lib/usePageTitle";
-import type { JobSummary } from "../types/api";
+import type { ExtractionStatus, JobSummary } from "../types/api";
+
+const STATUS_LABEL: Record<ExtractionStatus, string> = {
+  pending: "Extraindo requisitos…",
+  done: "Requisitos extraídos",
+  failed: "Falha na extração",
+};
+
+const STATUS_TONE: Record<ExtractionStatus, BadgeTone> = {
+  pending: "warning",
+  done: "success",
+  failed: "danger",
+};
 
 export function JobsPage() {
   usePageTitle("Vagas");
@@ -94,15 +106,14 @@ export function JobsPage() {
       ) : (
         <ul className="flex flex-col gap-sm">
           {jobs.map((job) => {
-            const isPending = job.extraction_status === "pending";
             return (
               <li key={job.id}>
                 <Card className="flex flex-col gap-sm p-lg sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-xs">
                       <h2 className="truncate font-medium text-ink">{job.title}</h2>
-                      <Badge tone={isPending ? "warning" : "success"}>
-                        {isPending ? "Extraindo requisitos…" : "Requisitos extraídos"}
+                      <Badge tone={STATUS_TONE[job.extraction_status]}>
+                        {STATUS_LABEL[job.extraction_status]}
                       </Badge>
                     </div>
                     <p className="mt-2xs text-sm text-muted">

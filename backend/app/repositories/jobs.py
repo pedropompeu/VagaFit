@@ -34,6 +34,15 @@ class JobRepository:
 
     async def set_extracted(self, job: Job, extracted: dict[str, Any]) -> None:
         job.extracted = extracted
+        job.extraction_error = None
+        await self._session.flush()
+
+    async def set_extraction_error(self, job: Job, message: str) -> None:
+        job.extraction_error = message
+        await self._session.flush()
+
+    async def clear_extraction_error(self, job: Job) -> None:
+        job.extraction_error = None
         await self._session.flush()
 
     async def delete(self, job_id: uuid.UUID) -> bool:

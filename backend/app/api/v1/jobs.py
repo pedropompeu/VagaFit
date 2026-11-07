@@ -25,8 +25,14 @@ def _read(job: Job) -> JobRead:
         title=job.title,
         company=job.company,
         created_at=job.created_at,
-        extraction_status="done" if job.extracted is not None else "pending",
+        extraction_status=_status(job),
     )
+
+
+def _status(job: Job) -> str:
+    if job.extracted is not None:
+        return "done"
+    return "failed" if job.extraction_error else "pending"
 
 
 @router.post(
@@ -62,6 +68,21 @@ async def get_job(job_id: uuid.UUID, service: JobServiceDep) -> JobDetail:
         raw_text=job.raw_text,
         extracted=JobExtraction.model_validate(job.extracted) if job.extracted else None,
     )
+
+
+@router.post(
+    "/{job_id}/extract",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Tentar a extração de novo",
+    description=(
+        "Reenfileira a extração de uma vaga em `failed`. Vaga já extraída é devolvida sem mudança. "
+        "Limite: 10/min por IP."
+    ),
+    responses={**_ERR_404, 429: {"model": ErrorResponse, "description": "Muitas requisições"}},
+)
+@rate_limit("10/minute")
+async def retry_extraction(request: Request, job_id: uuid.UUID, service: JobServiceDep) -> JobRead:
+    return _read(await service.retry_extraction(job_id))
 
 
 @router.delete(

@@ -50,6 +50,16 @@ class JobService:
             raise NotFoundError(JOB_NOT_FOUND)
         return job
 
+    async def retry_extraction(self, job_id: uuid.UUID) -> Job:
+        """Reenfileira a extração de uma vaga que falhou. Vaga já extraída não muda."""
+        job = await self.get(job_id)
+        if job.extracted is None:
+            await self._repo.clear_extraction_error(job)
+            await self._session.commit()
+            self._queue.enqueue(EXTRACT_JOB_TASK, str(job.id), str(self._user_id))
+            logger.info("job.extraction_retried", job_id=str(job.id))
+        return job
+
     async def delete(self, job_id: uuid.UUID) -> None:
         if not await self._repo.delete(job_id):
             raise NotFoundError(JOB_NOT_FOUND)
