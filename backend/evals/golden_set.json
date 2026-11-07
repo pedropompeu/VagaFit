@@ -1,0 +1,35 @@
+[
+  {
+    "id": "backend-aderente",
+    "resume": "Ana Souza, Engenheira de Software Backend\nExperiência\n- 2021-2026: Desenvolvedora Python na Acme. Construí APIs REST com FastAPI e PostgreSQL.\n- Escrevi testes automatizados com pytest e cobertura acima de 85%.\n- Empacotei os serviços com Docker e publiquei em containers.\nHabilidades\nPython, FastAPI, PostgreSQL, Docker, pytest.",
+    "job": "Desenvolvedor Backend Python\nRequisitos:\n- experiência com Python e FastAPI\n- banco relacional (PostgreSQL)\n- testes automatizados\n- Docker\nDiferencial:\n- Kubernetes",
+    "expected": {
+      "experiência com Python e FastAPI": "met",
+      "banco relacional (PostgreSQL)": "met",
+      "testes automatizados": "met",
+      "Docker": "met",
+      "Kubernetes": "not_met"
+    }
+  },
+  {
+    "id": "sem-aderencia",
+    "resume": "Bruno Lima, Desenvolvedor Front-end\nExperiência\n- Criei interfaces em React e TypeScript para um e-commerce.\n- Estilização com CSS e Tailwind.\nHabilidades\nJavaScript, React, TypeScript, CSS.",
+    "job": "Engenheiro de Dados\nRequisitos:\n- experiência com Go\n- Kafka em produção\n- banco relacional (PostgreSQL)",
+    "expected": {
+      "experiência com Go": "not_met",
+      "Kafka em produção": "not_met",
+      "banco relacional (PostgreSQL)": "not_met"
+    }
+  },
+  {
+    "id": "paragrafo-unico",
+    "resume": "Carlos Dias, Engenheiro de Software. Experiência: Desenvolvedor Python na Loja X, com APIs em FastAPI e PostgreSQL. Testes com pytest. Habilidades: Python, FastAPI, PostgreSQL, Docker.",
+    "job": "Vaga para Desenvolvedor Backend Python. Requisitos: experiência com Python e FastAPI; banco relacional (PostgreSQL); Docker. Diferencial: React.",
+    "expected": {
+      "experiência com Python e FastAPI": "met",
+      "banco relacional (PostgreSQL)": "met",
+      "Docker": "met",
+      "React": "not_met"
+    }
+  }
+]
