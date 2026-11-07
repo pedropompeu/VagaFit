@@ -95,7 +95,7 @@ async def test_extraction_is_idempotent(
     assert len(llm.requests) == 1
 
 
-async def test_extraction_failure_keeps_job_pending(
+async def test_extraction_failure_leaves_job_unextracted_with_error(
     client: AsyncClient, user_a: AuthedUser, db_session: AsyncSession
 ) -> None:
     job_id = uuid.UUID((await _create(client, user_a))["id"])
@@ -115,6 +115,7 @@ async def test_extraction_failure_keeps_job_pending(
     job = await JobRepository(db_session, user_a.id).get(job_id)
     assert job is not None
     assert job.extracted is None
+    assert job.extraction_error is not None
 
 
 async def test_extraction_of_other_users_job_does_nothing(
