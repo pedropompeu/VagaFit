@@ -31,7 +31,10 @@ def extract_job(job_id: str, user_id: str) -> bool:
         finally:
             await llm.aclose()
 
-    return run_async(job)
+    try:
+        return run_async(job)
+    finally:
+        flush_tracing()  # fora do loop async: o envio ao LangFuse é bloqueante
 
 
 @celery_app.task(name=RUN_ANALYSIS_TASK)
